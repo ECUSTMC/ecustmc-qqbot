@@ -336,6 +336,39 @@ async def jrrp(api: BotAPI, message: GroupMessage, params=None):
         else:
             return None
 
+    def GetRangeDescription(score:int) -> str :
+        if score==0:
+            return "这运气也太差了吧？？？该不会是。。。。"
+        if score==66:
+            return "恭喜哦，抽到了隐藏彩蛋，六六大顺，666666666"
+        if score==88:
+            return "恭喜哦，抽到了隐藏彩蛋，发发发发，888888888"
+        if score==69:
+            return "这是什么意思啊，69696969696969696，哈哈哈哈哈哈哈哈哈"
+        if score==100:
+            return ""
+        
+        if score>0 and score<10:
+            return "好烂的运气啊，大概率你今天买泡面没调料没叉子，点外卖没餐具。"
+        if score>=10 and score<20:
+            return "好烂的运气啊，大概率你今天买泡面没调料没叉子，点外卖没餐具。"
+        if score>=20 and score<30:
+            return "也许今天更适合摆烂。"
+        if score>=30 and score<40:
+            return "运气一般般啊，平平淡淡没什么新奇。"
+        if score>=40 and score<50:
+            return "运气不好不差，钻石矿可能比较难挖到。"
+        if score>=50 and score<60:
+            return "运气处于正态分布的中部，今天适合玩MC服。"
+        if score>=60 and score<70:
+            return "运气不好不差，今天就别开箱子了。"
+        if score>=70 and score<80:
+            return "今天你将会拥有非凡的一天。"
+        if score>=80 and score<90:
+            return "运气还不错，看起来一切都很顺利。"
+        if score>=90 and score<100:
+            return "运气真不错，今天适合抽卡。"
+
     def get_user_number(user):
         today_date = datetime.now().strftime('%Y-%m-%d')
 
@@ -349,7 +382,7 @@ async def jrrp(api: BotAPI, message: GroupMessage, params=None):
             fortune_data = jrys_data[str(random_number)][0]
         else:
             while True:
-                random_number = random.randint(1, 1433)
+                random_number = random.randint(1, 100)
                 fortune_data = jrys_data.get(str(random_number))
 
                 if fortune_data:
@@ -371,7 +404,7 @@ async def jrrp(api: BotAPI, message: GroupMessage, params=None):
     user = f"{message.author.member_openid}"
     assigned_number = get_user_number(user)
 
-    reply = f"今日人品值：{assigned_number}"
+    reply = f"今日人品值：{assigned_number}，{GetRangeDescription(int(assigned_number))}"
 
     await message.reply(content=reply)
     return True
