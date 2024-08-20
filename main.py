@@ -442,7 +442,7 @@ async def wiki(api: BotAPI, message: GroupMessage, params=None):
     
     return True
 
-@Commands("add_server")
+@Commands("添加服务器")
 async def add_server(api: BotAPI, message: GroupMessage, params=None):
     if params:
         new_server = ' '.join(params).strip()
@@ -472,7 +472,7 @@ async def add_server(api: BotAPI, message: GroupMessage, params=None):
     return True
 
 
-@Commands("remove_server")
+@Commands("移除服务器")
 async def remove_server(api: BotAPI, message: GroupMessage, params=None):
     if params:
         server_to_remove = ' '.join(params).strip()
