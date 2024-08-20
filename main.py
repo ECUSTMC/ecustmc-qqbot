@@ -438,7 +438,7 @@ async def wiki(api: BotAPI, message: GroupMessage, params=None):
         
         await message.reply(content=reply_content)
     else:
-        await message.reply(content="⚠️ 请提供要查询的Wiki页面关键字！")
+        await message.reply(content="⚠️ 请提供要查询的Wiki页面关键字！例如 /wiki 门")
     
     return True
 
