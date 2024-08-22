@@ -53,6 +53,7 @@ async def query_weather(api: BotAPI, message: GroupMessage, params=None):
                 reporttime = fx_live_data.get("reporttime", "N/A")
 
                 reply_content = (
+                    f"\n"
                     f"奉贤校区：\n"
                     f"天气：{fx_weather}\n"
                     f"温度：{fx_temperature}\n"
