@@ -27,8 +27,8 @@ async def on_ecustmc_backend_error(message: GroupMessage):
 async def query_weather(api: BotAPI, message: GroupMessage, params=None):
     async with aiohttp.ClientSession() as session:
         fx_res, xh_res = await asyncio.gather(
-            session.get(f"https://restapi.amap.com.ecustvr.top/v3/weather/weatherInfo?city=310120&key=" + r.weather_api_token),
-            session.get(f"https://restapi.amap.com.ecustvr.top/v3/weather/weatherInfo?city=310104&key=" + r.weather_api_token)
+            session.get(f"http://restapi.amap.com.ecustvr.top/v3/weather/weatherInfo?city=310120&key=" + r.weather_api_token),
+            session.get(f"http://restapi.amap.com.ecustvr.top/v3/weather/weatherInfo?city=310104&key=" + r.weather_api_token)
         )
 
         if fx_res.ok:
