@@ -429,7 +429,7 @@ import urllib.parse
 async def wiki(api: BotAPI, message: GroupMessage, params=None):
     if params:
         # 获取指令后的关键字
-        query = ' '.join(params)
+        query = ''.join(params)
         # 对查询关键词进行URL编码
         encoded_query = urllib.parse.quote(query)
         # 生成Wiki链接
@@ -446,8 +446,7 @@ async def wiki(api: BotAPI, message: GroupMessage, params=None):
 @Commands("添加服务器")
 async def add_server(api: BotAPI, message: GroupMessage, params=None):
     if params:
-        new_server = ' '.join(params).strip()
-        new_server = new_server.replace(' ', '')
+        new_server = ''.join(params).strip()
 
         # 获取当前服务器列表
         current_servers = r.mc_servers.split(",")
@@ -476,8 +475,7 @@ async def add_server(api: BotAPI, message: GroupMessage, params=None):
 @Commands("移除服务器")
 async def remove_server(api: BotAPI, message: GroupMessage, params=None):
     if params:
-        server_to_remove = ' '.join(params).strip()
-        server_to_remove = server_to_remove.replace(' ', '')
+        server_to_remove = ''.join(params).strip()
 
         # 获取当前服务器列表
         current_servers = r.mc_servers.split(",")
@@ -540,7 +538,7 @@ async def main():
     intents = botpy.Intents(
         public_messages=True
     )
-    client = EcustmcClient(intents=intents, is_sandbox=True, log_level=10, timeout=30)
+    client = EcustmcClient(intents=intents, is_sandbox=False, log_level=20, timeout=30)
     await client.start(appid=r.appid, secret=r.secret)
     await session.close()
 
