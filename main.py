@@ -501,6 +501,87 @@ async def remove_server(api: BotAPI, message: GroupMessage, params=None):
     return True
 
 
+@Commands("塔罗牌")
+async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
+    # 加载塔罗牌数据
+    with open('Tarots.json', 'r', encoding='utf-8') as file:
+        tarots = json.load(file)
+
+    # 从塔罗牌列表中随机选择一张塔罗牌
+    card_number = random.choice(list(tarots.keys()))
+    tarot_card = tarots[card_number]
+    
+    # 获取塔罗牌信息
+    name = tarot_card['name']
+    description = tarot_card['info']['description']
+    reverse_description = tarot_card['info']['reverseDescription']
+    img_url = "http://www.ecustvr.top/"
+    img_url += tarot_card['info']['imgUrl']
+
+    # 随机决定正位还是逆位
+    is_reverse = random.choice([True, False])
+    if is_reverse:
+        description_to_use = f"逆位：{reverse_description}"
+    else:
+        description_to_use = f"正位：{description}"
+
+    # 当前时间戳
+    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+
+    # 上传图片
+    uploadmedia = await api.post_group_file(
+        group_openid=message.group_openid,
+        file_type=1,
+        url=img_url
+    )
+
+    # 构建回复内容
+    reply_content = (
+        f"\n"
+        f"塔罗牌：{name}\n"
+        f"{description_to_use}\n"
+        f"查询时间：{timestamp}"
+    )
+
+    # 发送消息
+    await message.reply(
+        content=reply_content,
+        msg_type=7,
+        media=uploadmedia
+    )
+
+    return True
+
+
+@Commands("求签")
+async def query_divinatory_symbol(api: BotAPI, message: GroupMessage, params=None):
+    # 加载卦象数据
+    with open('DivinatorySymbols.json', 'r', encoding='utf-8') as file:
+        divinatory_symbols = json.load(file)
+        
+    # 从卦象列表中随机选择一个卦象
+    symbol_number = random.choice(list(divinatory_symbols.keys()))
+    divinatory_symbol = divinatory_symbols[symbol_number]
+    
+    # 获取卦象信息
+    name = divinatory_symbol['name']
+    description = divinatory_symbol['info']['description']
+    level = divinatory_symbol['info']['level']
+
+    # 构建回复内容
+    reply_content = (
+        f"\n"
+        f"卦象: {name}\n"
+        f"等级: {level}\n"
+        f"解读: \n{description}\n"
+    )
+
+    # 发送消息
+    await message.reply(content=reply_content)
+
+    return True
+
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -511,7 +592,9 @@ handlers = [
     tutorial,
     wiki,
     add_server,
-    remove_server
+    remove_server,
+    query_tarot,
+    query_divinatory_symbol
 ]
 
 
