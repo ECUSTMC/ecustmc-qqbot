@@ -525,9 +525,6 @@ async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
     else:
         description_to_use = f"正位：{description}"
 
-    # 当前时间戳
-    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-
     # 上传图片
     uploadmedia = await api.post_group_file(
         group_openid=message.group_openid,
@@ -539,8 +536,7 @@ async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
     reply_content = (
         f"\n"
         f"塔罗牌：{name}\n"
-        f"{description_to_use}\n"
-        f"查询时间：{timestamp}"
+        f"{description_to_use}"
     )
 
     # 发送消息
@@ -573,7 +569,7 @@ async def query_divinatory_symbol(api: BotAPI, message: GroupMessage, params=Non
         f"\n"
         f"卦象: {name}\n"
         f"等级: {level}\n"
-        f"解读: \n{description}\n"
+        f"解读: \n{description}"
     )
 
     # 发送消息
