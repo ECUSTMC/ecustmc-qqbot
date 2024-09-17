@@ -589,11 +589,6 @@ async def help(api: BotAPI, message: GroupMessage, params=None):
     await message.reply(content=help_content)
     return True
 
-# 定义新指令
-import requests
-import json
-import r
-
 @Commands("wx")
 async def query_wenxin_model(api: BotAPI, message: GroupMessage, params=None):
     user_input = " ".join(params) if params else "请输入问题"
