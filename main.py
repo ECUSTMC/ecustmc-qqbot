@@ -577,6 +577,15 @@ async def query_divinatory_symbol(api: BotAPI, message: GroupMessage, params=Non
 
     return True
 
+@Commands("帮助")
+async def help(api: BotAPI, message: GroupMessage, params=None):
+    help_content = (
+        "\n👋 欢迎！\n"
+        "有问题请咨询群管理员！\n"
+    )
+    
+    await message.reply(content=help_content)
+    return True
 
 handlers = [
     query_weather,
@@ -586,6 +595,7 @@ handlers = [
     jrrp,
     jrys,
     tutorial,
+    help,
     wiki,
     add_server,
     remove_server,
@@ -617,7 +627,7 @@ async def main():
     intents = botpy.Intents(
         public_messages=True
     )
-    client = EcustmcClient(intents=intents, is_sandbox=False, log_level=20, timeout=30)
+    client = EcustmcClient(intents=intents, is_sandbox=False, log_level=30, timeout=30)
     await client.start(appid=r.appid, secret=r.secret)
     await session.close()
 
