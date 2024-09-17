@@ -62,3 +62,7 @@ if appid is None:
 deepseek_api_key = os.getenv("DeepSeek_API_Key")
 if appid is None:
     raise Exception('Missing "DeepSeek_API_Key" environment variable for your bot DeepSeek_API_Key')
+
+freeapi = os.getenv("FREEAPI")
+if appid is None:
+    raise Exception('Missing "FREEAPI" environment variable for your bot FREEAPI')
