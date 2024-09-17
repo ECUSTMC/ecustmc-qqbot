@@ -637,6 +637,49 @@ async def query_wenxin_model(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("gpt")
+async def query_gpt_model(api: BotAPI, message: GroupMessage, params=None):
+    user_input = "".join(params) if params else "请输入问题"
+
+    try:
+        # 从 r 模块获取 Free API Key
+        api_key = r.freeapi
+        
+        # API 请求的 URL
+        api_url = "https://api.ddaiai.com/v1/chat/completions"
+        
+        # 请求头
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        # 请求体
+        payload = {
+            "model": "gpt-3.5-turbo",
+            "messages": [
+                {"role": "user", "content": user_input}
+            ]
+        }
+        
+        # 发送 POST 请求
+        response = requests.post(api_url, headers=headers, data=json.dumps(payload))
+        
+        if response.status_code == 200:
+            result = response.json()
+            model_response = result.get("choices", [{}])[0].get("message", {}).get("content", "没有有效的回应")
+        else:
+            model_response = "调用 Free 大模型 API 失败"
+        
+        # 回复模型生成的内容
+        await message.reply(content=f"模型回应:\n{model_response}")
+
+    except Exception as e:
+        # 错误处理
+        await message.reply(content=f"调用 Free 大模型时出错: {str(e)}")
+
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -651,7 +694,8 @@ handlers = [
     remove_server,
     query_tarot,
     query_divinatory_symbol,
-    query_wenxin_model
+    query_wenxin_model,
+    query_gpt_model
 ]
 
 
