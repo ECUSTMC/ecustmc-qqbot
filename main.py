@@ -10,6 +10,7 @@ import sqlite3
 from datetime import datetime
 import aiohttp
 import random
+import requests
 import json
 from openai import OpenAI
 
@@ -588,6 +589,54 @@ async def help(api: BotAPI, message: GroupMessage, params=None):
     await message.reply(content=help_content)
     return True
 
+# 定义新指令
+import requests
+import json
+import r
+
+@Commands("wx")
+async def query_wenxin_model(api: BotAPI, message: GroupMessage, params=None):
+    user_input = " ".join(params) if params else "请输入问题"
+
+    try:
+        # 使用 r.qianfan_access_key 和 r.qianfan_secret_key 获取 API Key 和 Secret Key
+        API_KEY = r.qianfan_access_key
+        SECRET_KEY = r.qianfan_secret_key
+
+        # 第一步：获取 access_token
+        token_url = f"https://aip.ecustvr.top/oauth/2.0/token?grant_type=client_credentials&client_id={API_KEY}&client_secret={SECRET_KEY}"
+        token_response = requests.get(token_url)
+        if token_response.status_code == 200:
+            access_token = token_response.json().get('access_token')
+        else:
+            await message.reply(content="获取 access_token 失败")
+            return
+
+        # 第二步：调用文心大模型 API
+        api_url = f"https://aip.ecustvr.top/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-4.0-8k-latest?access_token={access_token}"
+        headers = {'Content-Type': 'application/json'}
+        payload = {
+            "messages": [
+                {"role": "user", "content": user_input}
+            ]
+        }
+
+        response = requests.post(api_url, headers=headers, data=json.dumps(payload))
+        if response.status_code == 200:
+            result = response.json()
+            model_response = result.get("result", "没有有效的回应")
+        else:
+            model_response = "调用文心 API 失败"
+
+        # 回复模型生成的内容
+        await message.reply(content=f"ERNIE-4.0-8K-Latest:\n{model_response}")
+
+    except Exception as e:
+        # 错误处理
+        await message.reply(content=f"调用文心大模型时出错: {str(e)}")
+
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -601,7 +650,8 @@ handlers = [
     add_server,
     remove_server,
     query_tarot,
-    query_divinatory_symbol
+    query_divinatory_symbol,
+    query_wenxin_model
 ]
 
 
