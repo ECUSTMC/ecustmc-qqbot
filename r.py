@@ -50,3 +50,11 @@ if weather_api_token is None:
 mc_servers = os.getenv("MC_SERVERS")
 if appid is None:
     raise Exception('Missing "MC_SERVERS" environment variable for your bot MC_SERVERS')
+
+qianfan_access_key = os.getenv("QIANFAN_ACCESS_KEY")
+if appid is None:
+    raise Exception('Missing "QIANFAN_ACCESS_KEY" environment variable for your bot QIANFAN_ACCESS_KEY')
+
+qianfan_secret_key = os.getenv("QIANFAN_SECRET_KEY")
+if appid is None:
+    raise Exception('Missing "QIANFAN_SECRET_KEY" environment variable for your bot QIANFAN_SECRET_KEY')

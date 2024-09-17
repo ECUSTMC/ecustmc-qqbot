@@ -11,6 +11,7 @@ from datetime import datetime
 import aiohttp
 import random
 import json
+import qianfan
 
 import r
 
@@ -612,7 +613,24 @@ class EcustmcClient(botpy.Client):
         for handler in handlers:
             if await handler(api=self.api, message=message):
                 return
-        await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
+        # 如果没有处理器处理，调用大模型
+        user_input = message.content.strip()  # 获取用户输入
+        if user_input:
+            # 调用大模型
+            chat_comp = qianfan.ChatCompletion()
+            resp = chat_comp.do(model="ERNIE-Speed-128K", messages=[{
+                "role": "user",
+                "content": user_input
+            }])
+
+            # 处理大模型的响应
+            model_response = resp.get("result", "没有有效的回应")
+
+            # 回复模型生成的内容
+            await message.reply(content=f"ERNIE-Speed-128K:\n{model_response}")
+        else:
+            # 如果用户没有输入内容
+            await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_add_robot(self, message: GroupManageEvent):
         await self.api.post_group_message(group_openid=message.group_openid, content="欢迎使用ECUST-Minecraft QQ Bot服务")
