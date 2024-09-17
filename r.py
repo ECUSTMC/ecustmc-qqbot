@@ -58,3 +58,7 @@ if appid is None:
 qianfan_secret_key = os.getenv("QIANFAN_SECRET_KEY")
 if appid is None:
     raise Exception('Missing "QIANFAN_SECRET_KEY" environment variable for your bot QIANFAN_SECRET_KEY')
+
+deepseek_api_key = os.getenv("DeepSeek_API_Key")
+if appid is None:
+    raise Exception('Missing "DeepSeek_API_Key" environment variable for your bot DeepSeek_API_Key')

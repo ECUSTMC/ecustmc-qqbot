@@ -11,7 +11,7 @@ from datetime import datetime
 import aiohttp
 import random
 import json
-import qianfan
+from openai import OpenAI
 
 import r
 
@@ -616,18 +616,26 @@ class EcustmcClient(botpy.Client):
         # 如果没有处理器处理，调用大模型
         user_input = message.content.strip()  # 获取用户输入
         if user_input:
-            # 调用大模型
-            chat_comp = qianfan.ChatCompletion()
-            resp = chat_comp.do(model="ERNIE-Speed-128K", messages=[{
-                "role": "user",
-                "content": user_input
-            }])
+            try:
+                # 调用大模型
+                client = OpenAI(api_key=r.deepseek_api_key, base_url="https://deepseek.ecustvr.top/beta")
+                response = client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=[
+                        {"role": "user", "content": user_input}
+                    ],
+                    stream=False
+                )
 
-            # 处理大模型的响应
-            model_response = resp.get("result", "没有有效的回应")
+                # 提取大模型的回应
+                model_response = response.choices[0].message.content if response.choices else "没有有效的回应"
 
-            # 回复模型生成的内容
-            await message.reply(content=f"ERNIE-Speed-128K:\n{model_response}")
+                # 回复模型生成的内容
+                await message.reply(content=f"DeepSeek:\n{model_response}")
+
+            except Exception as e:
+                # 错误处理，防止大模型调用失败时崩溃
+                await message.reply(content=f"调用大模型时出错: {str(e)}")
         else:
             # 如果用户没有输入内容
             await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
