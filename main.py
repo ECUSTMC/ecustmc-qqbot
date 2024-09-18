@@ -12,6 +12,7 @@ import aiohttp
 import random
 import requests
 import json
+import openai
 from openai import OpenAI
 
 import r
@@ -632,6 +633,41 @@ async def query_wenxin_model(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("gpt")
+async def query_free_gpt(api: BotAPI, message: GroupMessage, params=None):
+    user_input = "".join(params) if params else "Hello world!"
+
+    try:
+        # 从 r 模块获取 API Key
+        openai.api_key = r.freeapi
+        
+        # 设置 Free GPT 的 base_url
+        openai.base_url = "https://gpt.ecustvr.top/v1/"
+        
+        # 可选的，设置默认 headers（如果有必要）
+        openai.default_headers = {"x-foo": "true"}
+
+        # 调用大模型
+        completion = openai.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_input,
+                },
+            ],
+        )
+
+        # 提取并发送模型响应
+        model_response = completion.choices[0].message.content
+        await message.reply(content=f"模型回应:\n{model_response}")
+
+    except Exception as e:
+        # 错误处理
+        await message.reply(content=f"调用 Free GPT 大模型时出错: {str(e)}")
+
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -646,7 +682,8 @@ handlers = [
     remove_server,
     query_tarot,
     query_divinatory_symbol,
-    query_wenxin_model
+    query_wenxin_model,
+    query_free_gpt
 ]
 
 
