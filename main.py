@@ -592,7 +592,7 @@ async def help(api: BotAPI, message: GroupMessage, params=None):
 
 @Commands("wx")
 async def query_wenxin_model(api: BotAPI, message: GroupMessage, params=None):
-    user_input = " ".join(params) if params else "请输入问题"
+    user_input = "".join(params) if params else "请输入问题"
 
     try:
         # 使用 r.qianfan_access_key 和 r.qianfan_secret_key 获取 API Key 和 Secret Key
