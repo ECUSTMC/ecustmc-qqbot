@@ -30,8 +30,8 @@ async def on_ecustmc_backend_error(message: GroupMessage):
 async def query_weather(api: BotAPI, message: GroupMessage, params=None):
     async with aiohttp.ClientSession() as session:
         fx_res, xh_res = await asyncio.gather(
-            session.get(f"http://restapi.amap.com.ecustvr.top/v3/weather/weatherInfo?city=310120&key=" + r.weather_api_token),
-            session.get(f"http://restapi.amap.com.ecustvr.top/v3/weather/weatherInfo?city=310104&key=" + r.weather_api_token)
+            session.get(f"https://restapi.amap.com/v3/weather/weatherInfo?city=310120&key=" + r.weather_api_token),
+            session.get(f"https://restapi.amap.com/v3/weather/weatherInfo?city=310104&key=" + r.weather_api_token)
         )
 
         if fx_res.ok:
@@ -96,7 +96,7 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
         if not server:
             continue
         
-        async with session.post(f"https://mcinfo.ecustvr.top/custom/serverlist/?query={server}") as res:
+        async with session.post(f"https://mc.sjtu.cn/custom/serverlist/?query={server}") as res:
             result = await res.json()
             if res.ok:
                 server_info = result
@@ -147,7 +147,7 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
 
 @Commands("一言")
 async def daily_word(api: BotAPI, message: GroupMessage, params=None):
-    daily_word = f"https://mxnzp.ecustvr.top/api/daily_word/recommend?count=1&app_id={r.api_app_id}&app_secret={r.api_app_secret}"
+    daily_word = f"https://www.mxnzp.com/api/daily_word/recommend?count=1&app_id={r.api_app_id}&app_secret={r.api_app_secret}"
     async with session.post(daily_word) as res:
         result = await res.json()
         if res.ok:
@@ -173,7 +173,7 @@ async def daily_huangli(api: BotAPI, message: GroupMessage, params=None):
     current_date = time.strftime("%Y%m%d", time.localtime())
     
     # 构建 API 请求 URL
-    daily_huangli = f"https://mxnzp.ecustvr.top/api/holiday/single/{current_date}?ignoreHoliday=false&app_id={r.api_app_id}&app_secret={r.api_app_secret}"
+    daily_huangli = f"https://www.mxnzp.com/api/holiday/single/{current_date}?ignoreHoliday=false&app_id={r.api_app_id}&app_secret={r.api_app_secret}"
     
     # 发送请求
     async with aiohttp.ClientSession() as session:
@@ -600,7 +600,7 @@ async def query_wenxin_model(api: BotAPI, message: GroupMessage, params=None):
         SECRET_KEY = r.qianfan_secret_key
 
         # 第一步：获取 access_token
-        token_url = f"https://aip.ecustvr.top/oauth/2.0/token?grant_type=client_credentials&client_id={API_KEY}&client_secret={SECRET_KEY}"
+        token_url = f"https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={API_KEY}&client_secret={SECRET_KEY}"
         token_response = requests.get(token_url)
         if token_response.status_code == 200:
             access_token = token_response.json().get('access_token')
@@ -609,7 +609,7 @@ async def query_wenxin_model(api: BotAPI, message: GroupMessage, params=None):
             return
 
         # 第二步：调用文心大模型 API
-        api_url = f"https://aip.ecustvr.top/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-4.0-8k-latest?access_token={access_token}"
+        api_url = f"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-4.0-8k-latest?access_token={access_token}"
         headers = {'Content-Type': 'application/json'}
         payload = {
             "messages": [
@@ -642,7 +642,7 @@ async def query_free_gpt(api: BotAPI, message: GroupMessage, params=None):
         openai.api_key = r.freeapi
         
         # 设置 Free GPT 的 base_url
-        openai.base_url = "https://gpt.ecustvr.top/v1/"
+        openai.base_url = "https://free.gpt.ge/v1/"
         
         # 可选的，设置默认 headers（如果有必要）
         openai.default_headers = {"x-foo": "true"}
@@ -700,7 +700,7 @@ class EcustmcClient(botpy.Client):
         if user_input:
             try:
                 # 调用大模型
-                client = OpenAI(api_key=r.deepseek_api_key, base_url="https://deepseek.ecustvr.top/beta")
+                client = OpenAI(api_key=r.deepseek_api_key, base_url="https://api.deepseek.com/beta")
                 response = client.chat.completions.create(
                     model="deepseek-chat",
                     messages=[
