@@ -590,9 +590,9 @@ async def help(api: BotAPI, message: GroupMessage, params=None):
     await message.reply(content=help_content)
     return True
 
-# 通用函数，用于调用不同的模型
-async def call_wenxin_model(api: BotAPI, message: GroupMessage, params, model_name):
-    user_input = "".join(params) if params else "请输入问题"
+@Commands("wx")
+async def query_wenxin_model(api: BotAPI, message: GroupMessage, params=None):
+    user_input = " ".join(params) if params else "请输入问题"
 
     try:
         # 使用 r.qianfan_access_key 和 r.qianfan_secret_key 获取 API Key 和 Secret Key
@@ -608,8 +608,8 @@ async def call_wenxin_model(api: BotAPI, message: GroupMessage, params, model_na
             await message.reply(content="获取 access_token 失败")
             return
 
-        # 第二步：调用指定的文心大模型 API
-        api_url = f"https://aip.ecustvr.top/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/{model_name}?access_token={access_token}"
+        # 第二步：调用文心大模型 API
+        api_url = f"https://aip.ecustvr.top/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-4.0-8k-latest?access_token={access_token}"
         headers = {'Content-Type': 'application/json'}
         payload = {
             "messages": [
@@ -622,25 +622,16 @@ async def call_wenxin_model(api: BotAPI, message: GroupMessage, params, model_na
             result = response.json()
             model_response = result.get("result", "没有有效的回应")
         else:
-            model_response = f"调用 {model_name} API 失败"
+            model_response = "调用文心 API 失败"
 
         # 回复模型生成的内容
-        await message.reply(content=f"{model_name}:\n{model_response}")
+        await message.reply(content=f"ERNIE-4.0-8K-Latest:\n{model_response}")
 
     except Exception as e:
         # 错误处理
-        await message.reply(content=f"调用 {model_name} 时出错: {str(e)}")
+        await message.reply(content=f"调用文心大模型时出错: {str(e)}")
 
     return True
-
-@Commands("wx")
-async def query_wenxin_latest(api: BotAPI, message: GroupMessage, params=None):
-    await call_wenxin_model(api, message, params, "ernie-4.0-8k-latest")
-
-
-@Commands("wxs")
-async def query_wenxin_speed(api: BotAPI, message: GroupMessage, params=None):
-    await call_wenxin_model(api, message, params, "ernie-speed-128k")
 
 @Commands("gpt")
 async def query_free_gpt(api: BotAPI, message: GroupMessage, params=None):
@@ -691,8 +682,7 @@ handlers = [
     remove_server,
     query_tarot,
     query_divinatory_symbol,
-    query_wenxin_latest,
-    query_wenxin_speed,
+    query_wenxin_model,
     query_free_gpt
 ]
 
