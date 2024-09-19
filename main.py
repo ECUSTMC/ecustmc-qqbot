@@ -725,7 +725,7 @@ async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
                     query = result["data"]["query"]
                     isp = query.get("isp", "未知ISP")
                     locale = query.get("locale", "未知地区")
-                    model_response = f"IPv4 地址 {ip} 的查询结果：\nISP: {isp}\n地区: {locale}"
+                    model_response = f"IPv4 地址 {ip} 的查询结果：\nISP: {isp}\n地区: {locale}\nPowered by Eric"
                 else:
                     model_response = f"查询 IPv4 地址 {ip} 失败：{result.get('msg', '未知错误')}"
             else:
