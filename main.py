@@ -704,6 +704,39 @@ async def query_kimi(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("qwen")
+async def query_qwen(api: BotAPI, message: GroupMessage, params=None):
+    user_input = "".join(params) if params else "Hello world!"
+
+    try:
+        # 从 r 模块获取 API Key
+        openai.api_key = r.dashscope_api_key
+        
+        # 设置 qwen 的 base_url
+        openai.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1/"
+
+        # 调用大模型
+        completion = openai.chat.completions.create(
+            model="qwen-max",
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_input,
+                },
+            ],
+            temperature = 0.3,
+        )
+
+        # 提取并发送模型响应
+        model_response = completion.choices[0].message.content
+        await message.reply(content=f"qwen-max:\n{model_response}")
+
+    except Exception as e:
+        # 错误处理
+        await message.reply(content=f"调用 qwen 大模型时出错: {str(e)}")
+
+    return True
+
 @Commands("ip")
 async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
     ip = "".join(params).strip() if params else None
@@ -790,6 +823,7 @@ handlers = [
     query_wenxin_model,
     query_free_gpt,
     query_kimi,
+    query_qwen,
     query_ip_info
 ]
 

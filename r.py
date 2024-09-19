@@ -70,3 +70,7 @@ if appid is None:
 moonshot_api_key= os.getenv("MOONSHOT_API_KEY")
 if appid is None:
     raise Exception('Missing "MOONSHOT_API_KEY" environment variable for your bot MOONSHOT_API_KEY')
+
+dashscope_api_key= os.getenv("DASHSCOPE_API_KEY")
+if appid is None:
+    raise Exception('Missing "DASHSCOPE_API_KEY" environment variable for your bot DASHSCOPE_API_KEY')
