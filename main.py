@@ -668,6 +668,39 @@ async def query_free_gpt(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("kimi")
+async def query_kimi(api: BotAPI, message: GroupMessage, params=None):
+    user_input = "".join(params) if params else "Hello world!"
+
+    try:
+        # 从 r 模块获取 API Key
+        openai.api_key = r.moonshot_api_key
+        
+        # 设置 kimi 的 base_url
+        openai.base_url = "https://api.moonshot.cn/v1"
+
+        # 调用大模型
+        completion = openai.chat.completions.create(
+            model="moonshot-v1-8k",
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_input,
+                },
+            ],
+            temperature = 0.3,
+        )
+
+        # 提取并发送模型响应
+        model_response = completion.choices[0].message.content
+        await message.reply(content=f"moonshot-v1-8k:\n{model_response}")
+
+    except Exception as e:
+        # 错误处理
+        await message.reply(content=f"调用 kimi 大模型时出错: {str(e)}")
+
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -683,7 +716,8 @@ handlers = [
     query_tarot,
     query_divinatory_symbol,
     query_wenxin_model,
-    query_free_gpt
+    query_free_gpt,
+    query_kimi
 ]
 
 

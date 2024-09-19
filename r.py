@@ -66,3 +66,7 @@ if appid is None:
 freeapi = os.getenv("FREEAPI")
 if appid is None:
     raise Exception('Missing "FREEAPI" environment variable for your bot FREEAPI')
+
+moonshot_api_key= os.getenv("MOONSHOT_API_KEY")
+if appid is None:
+    raise Exception('Missing "MOONSHOT_API_KEY" environment variable for your bot MOONSHOT_API_KEY')
