@@ -5,6 +5,7 @@ from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.manage import GroupManageEvent
 from botpy.message import GroupMessage
+import IPy
 import time
 import sqlite3
 from datetime import datetime
@@ -15,6 +16,7 @@ import json
 import openai
 from openai import OpenAI
 import re
+import socket
 
 import r
 
@@ -709,13 +711,31 @@ async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
     def is_ipv4(ip):
         pattern = re.compile(r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
         return pattern.match(ip) is not None
+    def checkip(address):
+        try:
+            version = IPy.IP(address).version()
+            if version == 4 or version == 6:
+                return True
+            else:
+                return False
+        except Exception as e:
+            return False
+        
+    def resolve_domain(domain):
+        try:
+            ip = socket.gethostbyname(domain)
+            return ip
+        except socket.gaierror:
+            return None
     
-    if not ip:
-        await message.reply(content="请输入要查询的 IP 地址")
-        return
+    if not checkip(ip):
+        ip = resolve_domain(ip)
 
     try:
-        if is_ipv4(ip):
+        if not checkip(ip):
+            model_response = "输入的 IP地址/域名 格式不正确，请输入有效的 IPv4 或 IPv6 地址。"
+            
+        elif is_ipv4(ip):
             # 如果是 IPv4 地址，调用第一个接口
             api_url = f"https://ip.ecust.icu/find?ip={ip}"
             response = requests.get(api_url)
