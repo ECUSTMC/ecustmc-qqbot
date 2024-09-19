@@ -717,7 +717,7 @@ async def query_qwen(api: BotAPI, message: GroupMessage, params=None):
 
         # 调用大模型
         completion = openai.chat.completions.create(
-            model="qwen-max",
+            model="qwen-max-latest",
             messages=[
                 {
                     "role": "user",
@@ -729,7 +729,7 @@ async def query_qwen(api: BotAPI, message: GroupMessage, params=None):
 
         # 提取并发送模型响应
         model_response = completion.choices[0].message.content
-        await message.reply(content=f"qwen-max:\n{model_response}")
+        await message.reply(content=f"qwen-max-latest:\n{model_response}")
 
     except Exception as e:
         # 错误处理
