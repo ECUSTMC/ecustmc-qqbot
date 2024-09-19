@@ -677,7 +677,7 @@ async def query_kimi(api: BotAPI, message: GroupMessage, params=None):
         openai.api_key = r.moonshot_api_key
         
         # 设置 kimi 的 base_url
-        openai.base_url = "https://api.moonshot.cn/v1"
+        openai.base_url = "https://api.moonshot.cn/v1/"
 
         # 调用大模型
         completion = openai.chat.completions.create(
