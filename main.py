@@ -14,6 +14,7 @@ import requests
 import json
 import openai
 from openai import OpenAI
+import re
 
 import r
 
@@ -701,6 +702,57 @@ async def query_kimi(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("ip")
+async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
+    ip = "".join(params).strip() if params else None
+    # 检查是否是 IPv4 地址
+    def is_ipv4(ip):
+        pattern = re.compile(r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
+        return pattern.match(ip) is not None
+    
+    if not ip:
+        await message.reply(content="请输入要查询的 IP 地址")
+        return
+
+    try:
+        if is_ipv4(ip):
+            # 如果是 IPv4 地址，调用第一个接口
+            api_url = f"https://ip.ecust.icu/find?ip={ip}"
+            response = requests.get(api_url)
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("code") == 200:
+                    query = result["data"]["query"]
+                    isp = query.get("isp", "未知ISP")
+                    locale = query.get("locale", "未知地区")
+                    model_response = f"IPv4 地址 {ip} 的查询结果：\nISP: {isp}\n地区: {locale}"
+                else:
+                    model_response = f"查询 IPv4 地址 {ip} 失败：{result.get('msg', '未知错误')}"
+            else:
+                model_response = f"调用 IPv4 查询接口失败，状态码: {response.status_code}"
+
+        else:
+            # 如果是 IPv6 地址，调用第二个接口
+            api_url = f"https://ip.zxinc.org/api.php?type=json&ip={ip}"
+            response = requests.get(api_url)
+            if response.status_code == 200:
+                result = response.json()
+                if result.get("code") == 0:
+                    location = result["data"].get("location", "未知地区")
+                    model_response = f"IPv6 地址 {ip} 的查询结果：\n位置: {location}"
+                else:
+                    model_response = f"查询 IPv6 地址 {ip} 失败：{result.get('msg', '未知错误')}"
+            else:
+                model_response = f"调用 IPv6 查询接口失败，状态码: {response.status_code}"
+
+        # 回复查询结果
+        await message.reply(content=model_response)
+
+    except Exception as e:
+        await message.reply(content=f"查询 IP 信息时发生错误: {str(e)}")
+
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -717,7 +769,8 @@ handlers = [
     query_divinatory_symbol,
     query_wenxin_model,
     query_free_gpt,
-    query_kimi
+    query_kimi,
+    query_ip_info
 ]
 
 
