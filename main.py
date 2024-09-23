@@ -737,7 +737,7 @@ async def query_qwen(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
-@Commands("ip")
+@Commands("ipinfo")
 async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
     ip = "".join(params).strip() if params else None
     # 检查是否是 IPv4 地址
@@ -756,8 +756,11 @@ async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
         
     def resolve_domain(domain):
         try:
-            ip = socket.gethostbyname(domain)
-            return ip
+            # 获取所有地址信息
+            addresses = socket.getaddrinfo(domain, None)
+            # 提取 IP 地址
+            ip_addresses = [addr[4][0] for addr in addresses]
+            return ip_addresses[0]
         except socket.gaierror:
             return None
     
@@ -806,6 +809,51 @@ async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("nslookup")
+async def query_domain_info(api: BotAPI, message: GroupMessage, params=None):
+    ip = "".join(params).strip() if params else None
+
+    if not ip:
+        await message.reply(content="请输入有效的域名或 IP 地址。")
+        return True
+
+    try:
+        # 获取所有地址信息
+        addresses = socket.getaddrinfo(ip, None)
+        # 提取 IP 地址
+        ip_addresses = list(set([addr[4][0] for addr in addresses]))
+        ip_addresses_str = ", ".join(ip_addresses)
+        await message.reply(content="查询到的 IP 地址有：" + ip_addresses_str)
+    except socket.gaierror:
+        await message.reply(content="无效的域名或 IP 地址，请检查后重试。")
+
+    return True
+
+@Commands("ping")
+async def ping_info(api: BotAPI, message: GroupMessage, params=None):
+    domain = "".join(params).strip() if params else None
+    if not domain:
+        await message.reply(content="请输入有效的域名或 IP 地址。")
+    else:
+        # 设置url
+        url = 'https://api.tjit.net/api/ping/v2?key='+r.tjit_key+'&type=node'
+        # 发送post请求
+        response = requests.post(url)
+        # 获取响应内容
+        result = response.json()["data"][-1]["node"]
+        random_node = random.sample(range(1, result), 6)
+        ping_content = '\nping测试结果为（随机6节点）：\n'
+        for i in random_node:
+            url = 'https://api.tjit.net/api/ping/v2?key='+r.tjit_key+'&node='+str(i)+'&host='+domain
+            response = requests.post(url)
+            result = response.json()
+            if 'time' in result['data']:
+                ping_content += f"{result['data']['node_name']}-{result['data']['node_isp']}：{result['data']['time']}\n"
+            else:
+                ping_content += f"{result['data']['node_name']}-{result['data']['node_isp']}：{result['data']['msg']}\n"
+        await message.reply(content=ping_content)
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -824,7 +872,9 @@ handlers = [
     query_free_gpt,
     query_kimi,
     query_qwen,
-    query_ip_info
+    query_ip_info,
+    query_domain_info,
+    ping_info
 ]
 
 

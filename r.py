@@ -74,3 +74,7 @@ if appid is None:
 dashscope_api_key= os.getenv("DASHSCOPE_API_KEY")
 if appid is None:
     raise Exception('Missing "DASHSCOPE_API_KEY" environment variable for your bot DASHSCOPE_API_KEY')
+
+tjit_key= os.getenv("TJIT_KEY")
+if appid is None:
+    raise Exception('Missing "TJIT_KEY" environment variable for your bot TJIT_KEY')
