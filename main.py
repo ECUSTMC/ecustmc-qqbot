@@ -150,15 +150,20 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
 
 @Commands("一言")
 async def daily_word(api: BotAPI, message: GroupMessage, params=None):
-    daily_word = f"https://www.mxnzp.com/api/daily_word/recommend?count=1&app_id={r.api_app_id}&app_secret={r.api_app_secret}"
+    daily_word = f"https://v1.hitokoto.cn/"
     async with session.post(daily_word) as res:
         result = await res.json()
         if res.ok:
-            content = result['data'][0]['content']
-
+            content = result['hitokoto']
+            author_from = result['from']
+            author = result['from_who']
+            if author != author_from and author != None:
+                author_from = f"{author}《{author_from}》"
             reply_content = (
                 f"\n"
                 f"{content}"
+                f"\n"
+                f"——{author_from}"
             )
 
             await message.reply(content=reply_content)
