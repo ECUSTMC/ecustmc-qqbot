@@ -421,19 +421,6 @@ async def jrrp(api: BotAPI, message: GroupMessage, params=None):
     await message.reply(content=reply)
     return True
 
-@Commands("新手教程")
-async def tutorial(api: BotAPI, message: GroupMessage, params=None):
-    tutorial_content = (
-        "\n👋 欢迎新人！\n"
-        "为了享受更好的游戏体验，请先注册皮肤站账号。\n"
-        "🔗 访问链接： https://mcskin.ecustvr.top/auth/register\n"
-        "通过这个站点，你可以自定义和上传你的皮肤，使用联合认证账号登录游戏，便可进入使用 Union 联合认证的其他高校的 Minecraft 服务器游玩，或登录到支持 Union OAuth 登录的网站。\n"
-        "更多关于游戏、启动器及账号配置等，欢迎访问 🔗萌新指南：https://mc.ecustvr.top/tutorial/，祝游戏愉快！"
-    )
-    
-    await message.reply(content=tutorial_content)
-    return True
-
 import urllib.parse
 
 @Commands("wiki")
@@ -591,8 +578,12 @@ async def query_divinatory_symbol(api: BotAPI, message: GroupMessage, params=Non
 @Commands("帮助")
 async def help(api: BotAPI, message: GroupMessage, params=None):
     help_content = (
-        "\n👋 欢迎！\n"
-        "有问题请咨询群管理员！\n"
+        "\n👋 欢迎新人！\n"
+        "为了享受更好的游戏体验，请先注册皮肤站账号。\n"
+        "🔗 访问链接： https://mcskin.ecustvr.top/auth/register\n"
+        "通过这个站点，你可以自定义和上传你的皮肤，使用联合认证账号登录游戏，便可进入使用 Union 联合认证的其他高校的 Minecraft 服务器游玩，或登录到支持 Union OAuth 登录的网站。\n"
+        "更多关于游戏、启动器及账号配置等，欢迎访问 🔗萌新指南：https://mc.ecustvr.top/tutorial/\n"
+        "更多关于bot指令的帮助，欢迎访问 🔗QQBot：https://mc.ecustvr.top/qqbot/，祝游戏愉快！"
     )
     
     await message.reply(content=help_content)
@@ -866,7 +857,6 @@ handlers = [
     daily_huangli,
     jrrp,
     jrys,
-    tutorial,
     help,
     wiki,
     add_server,
