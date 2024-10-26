@@ -498,6 +498,20 @@ async def remove_server(api: BotAPI, message: GroupMessage, params=None):
     
     return True
 
+@Commands("cookies")
+async def cookies(api: BotAPI, message: GroupMessage, params=None):
+    if params:
+        new_cookies = ''.join(params).strip()
+        r.update_env_variable("COOKIE", new_cookies)
+
+        # 更新 r.py 中的 mc_servers
+        r.cookie_string = new_cookies
+
+        await message.reply(content=f"COOKIES已更新")
+    else:
+        await message.reply(content="⚠️ 请提供要更新的COOKIES！")
+    
+    return True
 
 @Commands("塔罗牌")
 async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
@@ -869,7 +883,8 @@ handlers = [
     query_qwen,
     query_ip_info,
     query_domain_info,
-    ping_info
+    ping_info,
+    cookies
 ]
 
 
@@ -881,32 +896,7 @@ class EcustmcClient(botpy.Client):
         for handler in handlers:
             if await handler(api=self.api, message=message):
                 return
-        # 如果没有处理器处理，调用大模型
-        user_input = message.content.strip()  # 获取用户输入
-        if user_input:
-            try:
-                # 调用大模型
-                client = OpenAI(api_key=r.deepseek_api_key, base_url="https://api.deepseek.com/beta")
-                response = client.chat.completions.create(
-                    model="deepseek-chat",
-                    messages=[
-                        {"role": "user", "content": user_input}
-                    ],
-                    stream=False
-                )
-
-                # 提取大模型的回应
-                model_response = response.choices[0].message.content if response.choices else "没有有效的回应"
-
-                # 回复模型生成的内容
-                await message.reply(content=f"DeepSeek:\n{model_response}")
-
-            except Exception as e:
-                # 错误处理，防止大模型调用失败时崩溃
-                await message.reply(content=f"调用大模型时出错: {str(e)}")
-        else:
-            # 如果用户没有输入内容
-            await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
+        await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_add_robot(self, message: GroupManageEvent):
         await self.api.post_group_message(group_openid=message.group_openid, content="欢迎使用ECUST-Minecraft QQ Bot服务")

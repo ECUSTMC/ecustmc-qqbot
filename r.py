@@ -40,41 +40,41 @@ if weather_api_token is None:
     raise Exception('Missing "WEATHER_API_TOKEN" environment variable for your AppSecret')
 
 api_app_id = os.getenv("API_APP_ID")
-if weather_api_token is None:
+if api_app_id is None:
     raise Exception('Missing "API_APP_ID" environment variable for your AppSecret')
 
 api_app_secret = os.getenv("API_APP_SECRET")
-if weather_api_token is None:
+if api_app_secret is None:
     raise Exception('Missing "API_APP_SECRET" environment variable for your AppSecret')
 
 mc_servers = os.getenv("MC_SERVERS")
-if appid is None:
+if mc_servers is None:
     raise Exception('Missing "MC_SERVERS" environment variable for your bot MC_SERVERS')
 
 qianfan_access_key = os.getenv("QIANFAN_ACCESS_KEY")
-if appid is None:
+if qianfan_access_key is None:
     raise Exception('Missing "QIANFAN_ACCESS_KEY" environment variable for your bot QIANFAN_ACCESS_KEY')
 
 qianfan_secret_key = os.getenv("QIANFAN_SECRET_KEY")
-if appid is None:
+if qianfan_secret_key is None:
     raise Exception('Missing "QIANFAN_SECRET_KEY" environment variable for your bot QIANFAN_SECRET_KEY')
 
 deepseek_api_key = os.getenv("DeepSeek_API_Key")
-if appid is None:
+if deepseek_api_key is None:
     raise Exception('Missing "DeepSeek_API_Key" environment variable for your bot DeepSeek_API_Key')
 
 freeapi = os.getenv("FREEAPI")
-if appid is None:
+if freeapi is None:
     raise Exception('Missing "FREEAPI" environment variable for your bot FREEAPI')
 
 moonshot_api_key= os.getenv("MOONSHOT_API_KEY")
-if appid is None:
+if moonshot_api_key is None:
     raise Exception('Missing "MOONSHOT_API_KEY" environment variable for your bot MOONSHOT_API_KEY')
 
 dashscope_api_key= os.getenv("DASHSCOPE_API_KEY")
-if appid is None:
+if dashscope_api_key is None:
     raise Exception('Missing "DASHSCOPE_API_KEY" environment variable for your bot DASHSCOPE_API_KEY')
 
 tjit_key= os.getenv("TJIT_KEY")
-if appid is None:
+if tjit_key is None:
     raise Exception('Missing "TJIT_KEY" environment variable for your bot TJIT_KEY')
