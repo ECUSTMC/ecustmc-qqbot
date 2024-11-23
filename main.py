@@ -141,6 +141,8 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
     if not reply_content:
         reply_content = "未查询到任何服务器信息"
     
+    reply_content += "⚠️由于QQAPI限制，服务器地址中间的“-”请自行换成“.”！"
+    
     await message.reply(
         content=reply_content,
         msg_type=0
