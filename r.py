@@ -78,3 +78,11 @@ if dashscope_api_key is None:
 tjit_key= os.getenv("TJIT_KEY")
 if tjit_key is None:
     raise Exception('Missing "TJIT_KEY" environment variable for your bot TJIT_KEY')
+
+mc_rcon_password= os.getenv("MC_KEY")
+if mc_rcon_password is None:
+    raise Exception('Missing "MC_KEY" environment variable for your bot MC_KEY')
+
+mc_server = os.getenv("MC_SERVER")
+if mc_server is None:
+    raise Exception('Missing "MC_SERVER" environment variable for your bot MC_SERVER')

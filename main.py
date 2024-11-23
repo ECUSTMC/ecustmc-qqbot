@@ -13,6 +13,7 @@ import aiohttp
 import random
 import requests
 import json
+from mcrcon import MCRcon
 import openai
 from openai import OpenAI
 import re
@@ -864,6 +865,36 @@ async def ping_info(api: BotAPI, message: GroupMessage, params=None):
         await message.reply(content=ping_content)
     return True
 
+@Commands("mc")
+async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
+    # 通过 r 获取 RCON 密码
+    rcon_password = r.mc_rcon_password
+    rcon_host = r.mc_server
+    rcon_port = 25575
+
+    if not params:
+        await message.reply(content="请提供 Minecraft 服务器命令（say/list）")
+        return
+
+    # 直接使用 params 作为 Minecraft 命令
+    mc_command = params
+
+    if mc_command != "list" and not mc_command.startswith("say"):
+        await message.reply(content="请提供合法的 Minecraft 服务器命令（say/list）")
+    else:
+        try:
+            # 连接到 RCON 服务器
+            with MCRcon(rcon_host, rcon_password, port=rcon_port) as mcr:
+                # 发送命令并获取响应
+                response = mcr.command(mc_command)
+                # 回复命令执行的结果
+                await message.reply(content=f"消息已送达服务器\n{response}")
+    
+        except Exception as e:
+            await message.reply(content=f"连接 Minecraft 服务器时发生错误: {str(e)}")
+
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -883,6 +914,7 @@ handlers = [
     query_qwen,
     query_ip_info,
     query_domain_info,
+    query_mc_command,
     ping_info,
     cookies
 ]
