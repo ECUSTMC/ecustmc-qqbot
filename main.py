@@ -501,21 +501,6 @@ async def remove_server(api: BotAPI, message: GroupMessage, params=None):
     
     return True
 
-@Commands("cookies")
-async def cookies(api: BotAPI, message: GroupMessage, params=None):
-    if params:
-        new_cookies = ''.join(params).strip()
-        r.update_env_variable("COOKIE", new_cookies)
-
-        # 更新 r.py 中的 mc_servers
-        r.cookie_string = new_cookies
-
-        await message.reply(content=f"COOKIES已更新")
-    else:
-        await message.reply(content="⚠️ 请提供要更新的COOKIES！")
-    
-    return True
-
 @Commands("塔罗牌")
 async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
     # 加载塔罗牌数据
@@ -897,6 +882,53 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("status")
+async def query_server_status(api: BotAPI, message: GroupMessage, params=None):
+    # API 地址
+    api_url = "http://mcsm.ecustvr.top/"  # 替换为实际 API 地址
+
+    try:
+        # 获取服务器状态数据
+        response = requests.get(api_url)
+        if response.status_code != 200:
+            await message.reply(content=f"无法获取服务器状态，状态码: {response.status_code}")
+            return
+
+        data = response.json()
+        if data.get("status") != 200:
+            await message.reply(content="服务器返回了非正常状态的数据")
+            return
+
+        # 提取所需数据
+        system_info = data["data"][0]["system"]
+
+        # 系统信息展示
+        uptime = system_info["uptime"] / 3600
+        loadavg = system_info["loadavg"]
+        total_mem = system_info["totalmem"] / (1024 ** 3)  # 转换为 GB
+        free_mem = system_info["freemem"] / (1024 ** 3)  # 转换为 GB
+        cpu_usage_percent = system_info["cpuUsage"] * 100
+        mem_usage_percent = system_info["memUsage"] * 100
+
+        # 构建信息内容
+        info_message = (
+            f"服务器状态:\n"
+            f"运行时间: {uptime:.2f} 小时\n"
+            f"近期负载: {loadavg}\n"
+            f"总内存: {total_mem:.2f} GB\n"
+            f"可用内存: {free_mem:.2f} GB\n"
+            f"CPU 使用率: {cpu_usage_percent:.2f}%\n"
+            f"内存使用率: {mem_usage_percent:.2f}%"
+        )
+
+        # 回复状态信息
+        await message.reply(content=info_message)
+
+    except Exception as e:
+        await message.reply(content=f"查询服务器状态时发生错误: {str(e)}")
+
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -918,7 +950,7 @@ handlers = [
     query_domain_info,
     query_mc_command,
     ping_info,
-    cookies
+    query_server_status
 ]
 
 
