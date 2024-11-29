@@ -962,7 +962,32 @@ class EcustmcClient(botpy.Client):
         for handler in handlers:
             if await handler(api=self.api, message=message):
                 return
-        await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
+        # 如果没有处理器处理，调用大模型
+        user_input = message.content.strip()  # 获取用户输入
+        if user_input:
+            try:
+                # 调用大模型
+                client = OpenAI(api_key=r.ecust_api_key, base_url="https://ass.ecustvr.top/api/application/c42eda6e-adac-11ef-9c90-0242ac110002")
+                response = client.chat.completions.create(
+                    model="deepseek-chat",
+                    messages=[
+                        {"role": "user", "content": user_input}
+                    ],
+                    stream=False
+                )
+
+                # 提取大模型的回应
+                model_response = response.choices[0].message.content if response.choices else "没有有效的回应"
+
+                # 回复模型生成的内容
+                await message.reply(content=f"\nECUST Helper:\n{model_response}")
+
+            except Exception as e:
+                # 错误处理，防止大模型调用失败时崩溃
+                await message.reply(content=f"调用大模型时出错: {str(e)}")
+        else:
+            # 如果用户没有输入内容
+            await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_add_robot(self, message: GroupManageEvent):
         await self.api.post_group_message(group_openid=message.group_openid, content="欢迎使用ECUST-Minecraft QQ Bot服务")

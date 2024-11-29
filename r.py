@@ -63,6 +63,10 @@ deepseek_api_key = os.getenv("DeepSeek_API_Key")
 if deepseek_api_key is None:
     raise Exception('Missing "DeepSeek_API_Key" environment variable for your bot DeepSeek_API_Key')
 
+ecust_api_key = os.getenv("ECUST_API_Key")
+if deepseek_api_key is None:
+    raise Exception('Missing "ECUST_API_Key" environment variable for your bot ECUST_API_Key')
+
 freeapi = os.getenv("FREEAPI")
 if freeapi is None:
     raise Exception('Missing "FREEAPI" environment variable for your bot FREEAPI')
