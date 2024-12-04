@@ -967,7 +967,7 @@ class EcustmcClient(botpy.Client):
         if user_input:
             try:
                 # 调用大模型
-                client = OpenAI(api_key=r.ecust_api_key, base_url="https://ass.ecustvr.top/api/application/c42eda6e-adac-11ef-9c90-0242ac110002")
+                client = OpenAI(api_key=r.ecust_api_key, base_url=r.ecust_url)
                 response = client.chat.completions.create(
                     model="deepseek-chat",
                     messages=[
