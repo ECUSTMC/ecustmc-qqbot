@@ -978,6 +978,7 @@ class EcustmcClient(botpy.Client):
 
                 # 提取大模型的回应
                 model_response = response.choices[0].message.content if response.choices else "没有有效的回应"
+                model_response = model_response.replace('ecust.edu.cn', 'ecust-edu-cn（⚠️由于QQAPI限制，地址中间的“-”请自行换成“.”！）')
 
                 # 回复模型生成的内容
                 await message.reply(content=f"\nECUST Helper:\n{model_response}")
