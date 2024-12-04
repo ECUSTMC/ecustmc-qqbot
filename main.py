@@ -978,7 +978,41 @@ class EcustmcClient(botpy.Client):
 
                 # 提取大模型的回应
                 model_response = response.choices[0].message.content if response.choices else "没有有效的回应"
-                model_response = model_response.replace('ecust.edu.cn', 'ecust-edu-cn（⚠️由于QQAPI限制，地址中间的“-”请自行换成“.”！）')
+
+                model_response = model_response.replace('ecust.edu.cn', 'ecust-edu-cn')
+
+                # 定义要替换的域名后缀及其对应的替换字符串
+                domain_replacements = {
+                    '.cn': '-cn',
+                    '.com': '-com',
+                    '.org': '-org',
+                    '.net': '-net',
+                    '.edu': '-edu',
+                    '.gov': '-gov',
+                    '.top': '-top',
+                    '.cc': '-cc',
+                    '.me': '-me',
+                    '.tv': '-tv',
+                    '.info': '-info',
+                    '.biz': '-biz',
+                    '.name': '-name',
+                    '.mobi': '-mobi',
+                    '.club': '-club',
+                    '.store': '-store',
+                    '.app': '-app',
+                    '.tech': '-tech',
+                    '.ai': '-ai',
+                    '.ink': '-ink',
+                    '.live': '-live',
+                    '.wiki': '-wiki',
+                    # 可以继续添加其他需要替换的域名后缀
+                }
+
+                # 进行替换
+                for old, new in domain_replacements.items():
+                    model_response = model_response.replace(old, new)
+                
+                model_response += "\n\n⚠️由于QQAPI限制，服务器地址中间的“-”请自行换成“.”！"
 
                 # 回复模型生成的内容
                 await message.reply(content=f"\nECUST Helper:\n{model_response}")
