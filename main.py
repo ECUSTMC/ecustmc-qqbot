@@ -884,7 +884,7 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
                 with MCRcon(rcon_host, rcon_password, port=rcon_port) as mcr:
                     # 执行多个命令
                     mcr.command("player bot_sleep kill")
-                    await message.reply(content="永昼机已启动")
+                    await message.reply(content="永昼机已关闭")
             except Exception as e:
                 await message.reply(content=f"连接 Minecraft 服务器时发生错误: {str(e)}")
             return True
