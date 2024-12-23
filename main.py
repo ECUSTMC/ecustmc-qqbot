@@ -871,7 +871,7 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
             try:
                 with MCRcon(rcon_host, rcon_password, port=rcon_port) as mcr:
                     # 执行多个命令
-                    mcr.command("player bot_sleep spawn at -270 95 769 facing -90 0 in minecraft:overworld")
+                    mcr.command("player bot_sleep spawn at -3200 55 9370 facing -90 0 in minecraft:overworld")
                     mcr.command("player bot_sleep use interval 20")
                     await message.reply(content="永昼机已启动")
             except Exception as e:
@@ -885,28 +885,6 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
                     # 执行多个命令
                     mcr.command("player bot_sleep kill")
                     await message.reply(content="永昼机已关闭")
-            except Exception as e:
-                await message.reply(content=f"连接 Minecraft 服务器时发生错误: {str(e)}")
-            return True
-
-        if mc_command == "刷铁机":
-            # 特殊处理命令为“刷铁机”的情况
-            try:
-                with MCRcon(rcon_host, rcon_password, port=rcon_port) as mcr:
-                    # 执行多个命令
-                    mcr.command("player bot_iron spawn at -3215 60 9375")
-                    await message.reply(content="刷铁机已启动")
-            except Exception as e:
-                await message.reply(content=f"连接 Minecraft 服务器时发生错误: {str(e)}")
-            return True
-
-        if mc_command == "关闭刷铁机":
-            # 特殊处理命令为“关闭刷铁机”的情况
-            try:
-                with MCRcon(rcon_host, rcon_password, port=rcon_port) as mcr:
-                    # 执行多个命令
-                    mcr.command("player bot_iron kill")
-                    await message.reply(content="刷铁机已关闭")
             except Exception as e:
                 await message.reply(content=f"连接 Minecraft 服务器时发生错误: {str(e)}")
             return True
