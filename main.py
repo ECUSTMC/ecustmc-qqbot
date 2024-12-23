@@ -860,7 +860,7 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
     rcon_port = 25575
 
     if not params:
-        await message.reply(content="请提供 Minecraft 服务器命令（say/list/永昼机/关闭永昼机/刷铁机/关闭刷铁机）")
+        await message.reply(content="请提供 Minecraft 服务器命令（say/list/永昼机/关闭永昼机）")
         return
     else:
         # 直接使用 params 作为 Minecraft 命令
@@ -890,7 +890,7 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
             return True
 
         if mc_command not in {"list"} and not any(mc_command.startswith(prefix) for prefix in ["say", "tp"]):
-            await message.reply(content="请提供合法的 Minecraft 服务器命令（say/list/永昼机/关闭永昼机/刷铁机/关闭刷铁机）")
+            await message.reply(content="请提供合法的 Minecraft 服务器命令（say/list/永昼机/关闭永昼机）")
         else:
             try:
                 # 连接到 RCON 服务器
