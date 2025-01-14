@@ -91,10 +91,6 @@ mc_rcon_password= os.getenv("MC_KEY")
 if mc_rcon_password is None:
     raise Exception('Missing "MC_KEY" environment variable for your bot MC_KEY')
 
-mc_rcon_port= os.getenv("MC_RCON_PORT")
-if mc_rcon_port is None:
-    raise Exception('Missing "MC_RCON_PORT" environment variable for your bot MC_RCON_PORT')
-
 mc_server = os.getenv("MC_SERVER")
 if mc_server is None:
     raise Exception('Missing "MC_SERVER" environment variable for your bot MC_SERVER')
