@@ -805,36 +805,6 @@ async def query_server_status(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
-@Commands("/deepseek")
-async def query_deepseek(api: BotAPI, message: GroupMessage, params=None):
-    user_input = "".join(params) if params else "Hello world!"
-
-    try:
-        # 使用 OpenAI 类初始化客户端
-        client = OpenAI(api_key=r.baidu_api_key, base_url="http://oneapi.ecustvr.top/v1/")
-
-        # 调用大模型
-        completion = client.chat.completions.create(
-            model="deepseek-v3",
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_input,
-                },
-            ],
-            temperature=0.3,
-        )
-
-        # 提取并发送模型响应
-        model_response = completion.choices[0].message.content
-        await message.reply(content=f"Deepseek:\n{model_response}")
-
-    except Exception as e:
-        # 错误处理
-        await message.reply(content=f"调用 Deepseek 大模型时出错: {str(e)}")
-
-    return True
-
 @Commands("/deepseekr")
 async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
     user_input = "".join(params) if params else "Hello world!"
@@ -865,6 +835,36 @@ async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("/deepseek")
+async def query_deepseek(api: BotAPI, message: GroupMessage, params=None):
+    user_input = "".join(params) if params else "Hello world!"
+
+    try:
+        # 使用 OpenAI 类初始化客户端
+        client = OpenAI(api_key=r.baidu_api_key, base_url="http://oneapi.ecustvr.top/v1/")
+
+        # 调用大模型
+        completion = client.chat.completions.create(
+            model="deepseek-v3",
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_input,
+                },
+            ],
+            temperature=0.3,
+        )
+
+        # 提取并发送模型响应
+        model_response = completion.choices[0].message.content
+        await message.reply(content=f"Deepseek:\n{model_response}")
+
+    except Exception as e:
+        # 错误处理
+        await message.reply(content=f"调用 Deepseek 大模型时出错: {str(e)}")
+
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -877,8 +877,8 @@ handlers = [
     add_server,
     remove_server,
     query_tarot,
-    query_deepseek,
     query_deepseek_r1,
+    query_deepseek,
     query_divinatory_symbol,
     query_ip_info,
     query_domain_info,
