@@ -835,7 +835,7 @@ async def query_deepseek(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
-@Commands("/deepseek-r1")
+@Commands("/deepseekr")
 async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
     user_input = "".join(params) if params else "Hello world!"
 
