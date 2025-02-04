@@ -810,14 +810,11 @@ async def query_deepseek(api: BotAPI, message: GroupMessage, params=None):
     user_input = "".join(params) if params else "Hello world!"
 
     try:
-        # 从 r 模块获取 API Key
-        openai.api_key = r.baidu_api_key
-        
-        # 设置 deepseek 的 base_url
-        openai.base_url = "http://oneapi.ecustvr.top/v1/"
+        # 使用 OpenAI 类初始化客户端
+        client = OpenAI(api_key=r.baidu_api_key, base_url="http://oneapi.ecustvr.top/v1/")
 
         # 调用大模型
-        completion = openai.chat.completions.create(
+        completion = client.chat.completions.create(
             model="deepseek-v3",
             messages=[
                 {
@@ -825,7 +822,7 @@ async def query_deepseek(api: BotAPI, message: GroupMessage, params=None):
                     "content": user_input,
                 },
             ],
-            temperature = 0.3,
+            temperature=0.3,
         )
 
         # 提取并发送模型响应
