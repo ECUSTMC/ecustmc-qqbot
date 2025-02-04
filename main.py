@@ -14,7 +14,6 @@ import random
 import requests
 import json
 from mcrcon import MCRcon
-import openai
 from openai import OpenAI
 import re
 import socket
@@ -30,7 +29,7 @@ async def on_ecustmc_backend_error(message: GroupMessage):
     await message.reply(content=f"服务无响应，请稍后再试，若此问题依然存在，请联系机器人管理员")
 
 
-@Commands("校园天气")
+@Commands("/校园天气")
 async def query_weather(api: BotAPI, message: GroupMessage, params=None):
     async with aiohttp.ClientSession() as session:
         fx_res, xh_res = await asyncio.gather(
@@ -87,7 +86,7 @@ async def query_weather(api: BotAPI, message: GroupMessage, params=None):
         return True
 
 
-@Commands("服务器状态")
+@Commands("/服务器状态")
 async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
     # 假设 r.mc_servers 包含了服务器列表，用逗号分隔
     server_list = r.mc_servers.split(",")
@@ -151,7 +150,7 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
     return True
 
 
-@Commands("一言")
+@Commands("/一言")
 async def daily_word(api: BotAPI, message: GroupMessage, params=None):
     daily_word = f"https://v1.hitokoto.cn/"
     async with session.post(daily_word) as res:
@@ -178,7 +177,7 @@ async def daily_word(api: BotAPI, message: GroupMessage, params=None):
         return True
 
 
-@Commands("今日黄历")
+@Commands("/今日黄历")
 async def daily_huangli(api: BotAPI, message: GroupMessage, params=None):
     # 获取当前日期
     current_date = time.strftime("%Y%m%d", time.localtime())
@@ -226,7 +225,7 @@ async def daily_huangli(api: BotAPI, message: GroupMessage, params=None):
     return True
 
 
-@Commands("今日运势")
+@Commands("/今日运势")
 async def jrys(api: BotAPI, message: GroupMessage, params=None):
     conn = sqlite3.connect('user_numbers.db')
     cursor = conn.cursor()
@@ -312,7 +311,7 @@ async def jrys(api: BotAPI, message: GroupMessage, params=None):
     return True
 
 
-@Commands("今日人品")
+@Commands("/今日人品")
 async def jrrp(api: BotAPI, message: GroupMessage, params=None):
     conn = sqlite3.connect('user_numbers.db')
     cursor = conn.cursor()
@@ -426,7 +425,7 @@ async def jrrp(api: BotAPI, message: GroupMessage, params=None):
 
 import urllib.parse
 
-@Commands("wiki")
+@Commands("/wiki")
 async def wiki(api: BotAPI, message: GroupMessage, params=None):
     if params:
         # 获取指令后的关键字
@@ -444,7 +443,7 @@ async def wiki(api: BotAPI, message: GroupMessage, params=None):
     
     return True
 
-@Commands("添加服务器")
+@Commands("/添加服务器")
 async def add_server(api: BotAPI, message: GroupMessage, params=None):
     if params:
         new_server = ''.join(params).strip()
@@ -473,7 +472,7 @@ async def add_server(api: BotAPI, message: GroupMessage, params=None):
     return True
 
 
-@Commands("移除服务器")
+@Commands("/移除服务器")
 async def remove_server(api: BotAPI, message: GroupMessage, params=None):
     if params:
         server_to_remove = ''.join(params).strip()
@@ -501,7 +500,7 @@ async def remove_server(api: BotAPI, message: GroupMessage, params=None):
     
     return True
 
-@Commands("塔罗牌")
+@Commands("/塔罗牌")
 async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
     # 加载塔罗牌数据
     with open('Tarots.json', 'r', encoding='utf-8') as file:
@@ -549,7 +548,7 @@ async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
     return True
 
 
-@Commands("求签")
+@Commands("/求签")
 async def query_divinatory_symbol(api: BotAPI, message: GroupMessage, params=None):
     # 加载卦象数据
     with open('DivinatorySymbols.json', 'r', encoding='utf-8') as file:
@@ -577,7 +576,7 @@ async def query_divinatory_symbol(api: BotAPI, message: GroupMessage, params=Non
 
     return True
 
-@Commands("帮助")
+@Commands("/帮助")
 async def help(api: BotAPI, message: GroupMessage, params=None):
     help_content = (
         "\n👋 欢迎新人！\n"
@@ -591,151 +590,7 @@ async def help(api: BotAPI, message: GroupMessage, params=None):
     await message.reply(content=help_content)
     return True
 
-@Commands("wx")
-async def query_wenxin_model(api: BotAPI, message: GroupMessage, params=None):
-    user_input = "".join(params) if params else "请输入问题"
-
-    try:
-        # 使用 r.qianfan_access_key 和 r.qianfan_secret_key 获取 API Key 和 Secret Key
-        API_KEY = r.qianfan_access_key
-        SECRET_KEY = r.qianfan_secret_key
-
-        # 第一步：获取 access_token
-        token_url = f"https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id={API_KEY}&client_secret={SECRET_KEY}"
-        token_response = requests.get(token_url)
-        if token_response.status_code == 200:
-            access_token = token_response.json().get('access_token')
-        else:
-            await message.reply(content="获取 access_token 失败")
-            return
-
-        # 第二步：调用文心大模型 API
-        api_url = f"https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-4.0-8k-latest?access_token={access_token}"
-        headers = {'Content-Type': 'application/json'}
-        payload = {
-            "messages": [
-                {"role": "user", "content": user_input}
-            ]
-        }
-
-        response = requests.post(api_url, headers=headers, data=json.dumps(payload))
-        if response.status_code == 200:
-            result = response.json()
-            model_response = result.get("result", "没有有效的回应")
-        else:
-            model_response = "调用文心 API 失败"
-
-        # 回复模型生成的内容
-        await message.reply(content=f"ERNIE-4.0-8K-Latest:\n{model_response}")
-
-    except Exception as e:
-        # 错误处理
-        await message.reply(content=f"调用文心大模型时出错: {str(e)}")
-
-    return True
-
-@Commands("gpt")
-async def query_free_gpt(api: BotAPI, message: GroupMessage, params=None):
-    user_input = "".join(params) if params else "Hello world!"
-
-    try:
-        # 从 r 模块获取 API Key
-        openai.api_key = r.freeapi
-        
-        # 设置 Free GPT 的 base_url
-        openai.base_url = "https://free.gpt.ge/v1/"
-        
-        # 可选的，设置默认 headers（如果有必要）
-        openai.default_headers = {"x-foo": "true"}
-
-        # 调用大模型
-        completion = openai.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_input,
-                },
-            ],
-        )
-
-        # 提取并发送模型响应
-        model_response = completion.choices[0].message.content
-        await message.reply(content=f"模型回应:\n{model_response}")
-
-    except Exception as e:
-        # 错误处理
-        await message.reply(content=f"调用 Free GPT 大模型时出错: {str(e)}")
-
-    return True
-
-@Commands("kimi")
-async def query_kimi(api: BotAPI, message: GroupMessage, params=None):
-    user_input = "".join(params) if params else "Hello world!"
-
-    try:
-        # 从 r 模块获取 API Key
-        openai.api_key = r.moonshot_api_key
-        
-        # 设置 kimi 的 base_url
-        openai.base_url = "https://api.moonshot.cn/v1/"
-
-        # 调用大模型
-        completion = openai.chat.completions.create(
-            model="moonshot-v1-8k",
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_input,
-                },
-            ],
-            temperature = 0.3,
-        )
-
-        # 提取并发送模型响应
-        model_response = completion.choices[0].message.content
-        await message.reply(content=f"moonshot-v1-8k:\n{model_response}")
-
-    except Exception as e:
-        # 错误处理
-        await message.reply(content=f"调用 kimi 大模型时出错: {str(e)}")
-
-    return True
-
-@Commands("qwen")
-async def query_qwen(api: BotAPI, message: GroupMessage, params=None):
-    user_input = "".join(params) if params else "Hello world!"
-
-    try:
-        # 从 r 模块获取 API Key
-        openai.api_key = r.dashscope_api_key
-        
-        # 设置 qwen 的 base_url
-        openai.base_url = "https://dashscope.aliyuncs.com/compatible-mode/v1/"
-
-        # 调用大模型
-        completion = openai.chat.completions.create(
-            model="qwen-max-latest",
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_input,
-                },
-            ],
-            temperature = 0.3,
-        )
-
-        # 提取并发送模型响应
-        model_response = completion.choices[0].message.content
-        await message.reply(content=f"qwen-max-latest:\n{model_response}")
-
-    except Exception as e:
-        # 错误处理
-        await message.reply(content=f"调用 qwen 大模型时出错: {str(e)}")
-
-    return True
-
-@Commands("ipinfo")
+@Commands("/ip")
 async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
     ip = "".join(params).strip() if params else None
     # 检查是否是 IPv4 地址
@@ -807,7 +662,7 @@ async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
-@Commands("nslookup")
+@Commands("/nslookup")
 async def query_domain_info(api: BotAPI, message: GroupMessage, params=None):
     ip = "".join(params).strip() if params else None
 
@@ -827,7 +682,7 @@ async def query_domain_info(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
-@Commands("ping")
+@Commands("/ping")
 async def ping_info(api: BotAPI, message: GroupMessage, params=None):
     domain = "".join(params).strip() if params else None
     if not domain:
@@ -852,7 +707,7 @@ async def ping_info(api: BotAPI, message: GroupMessage, params=None):
         await message.reply(content=ping_content)
     return True
 
-@Commands("mc")
+@Commands("/mc")
 async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
     # 通过 r 获取 RCON 密码
     rcon_password = r.mc_rcon_password
@@ -903,7 +758,7 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
                 await message.reply(content=f"连接 Minecraft 服务器时发生错误: {str(e)}")
     return True
 
-@Commands("status")
+@Commands("/status")
 async def query_server_status(api: BotAPI, message: GroupMessage, params=None):
     # API 地址
     api_url = "http://mcsm.ecustvr.top/"  # 替换为实际 API 地址
@@ -963,10 +818,6 @@ handlers = [
     remove_server,
     query_tarot,
     query_divinatory_symbol,
-    query_wenxin_model,
-    query_free_gpt,
-    query_kimi,
-    query_qwen,
     query_ip_info,
     query_domain_info,
     query_mc_command,
