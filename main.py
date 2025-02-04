@@ -835,6 +835,36 @@ async def query_deepseek(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("/deepseek-r1")
+async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
+    user_input = "".join(params) if params else "Hello world!"
+
+    try:
+        # 使用 OpenAI 类初始化客户端
+        client = OpenAI(api_key=r.baidu_api_key, base_url="http://oneapi.ecustvr.top/v1/")
+
+        # 调用大模型
+        completion = client.chat.completions.create(
+            model="deepseek-r1",
+            messages=[
+                {
+                    "role": "user",
+                    "content": user_input,
+                },
+            ],
+            temperature=0.3,
+        )
+
+        # 提取并发送模型响应
+        model_response = completion.choices[0].message.content
+        await message.reply(content=f"Deepseek-R1:\n{model_response}")
+
+    except Exception as e:
+        # 错误处理
+        await message.reply(content=f"调用 Deepseek-R1 大模型时出错: {str(e)}")
+
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -848,6 +878,7 @@ handlers = [
     remove_server,
     query_tarot,
     query_deepseek,
+    query_deepseek_r1,
     query_divinatory_symbol,
     query_ip_info,
     query_domain_info,
@@ -940,7 +971,7 @@ async def main():
     intents = botpy.Intents(
         public_messages=True
     )
-    client = EcustmcClient(intents=intents, is_sandbox=False, log_level=30, timeout=30)
+    client = EcustmcClient(intents=intents, is_sandbox=False, log_level=30, timeout=60)
     await client.start(appid=r.appid, secret=r.secret)
     await session.close()
 
