@@ -51,14 +51,6 @@ mc_servers = os.getenv("MC_SERVERS")
 if mc_servers is None:
     raise Exception('Missing "MC_SERVERS" environment variable for your bot MC_SERVERS')
 
-qianfan_access_key = os.getenv("QIANFAN_ACCESS_KEY")
-if qianfan_access_key is None:
-    raise Exception('Missing "QIANFAN_ACCESS_KEY" environment variable for your bot QIANFAN_ACCESS_KEY')
-
-qianfan_secret_key = os.getenv("QIANFAN_SECRET_KEY")
-if qianfan_secret_key is None:
-    raise Exception('Missing "QIANFAN_SECRET_KEY" environment variable for your bot QIANFAN_SECRET_KEY')
-
 deepseek_api_key = os.getenv("DeepSeek_API_Key")
 if deepseek_api_key is None:
     raise Exception('Missing "DeepSeek_API_Key" environment variable for your bot DeepSeek_API_Key')
@@ -70,18 +62,6 @@ if ecust_api_key is None:
 ecust_url = os.getenv("ECUST_URL")
 if ecust_url is None:
     raise Exception('Missing "ECUST_URL" environment variable for your bot ECUST_URL')
-
-freeapi = os.getenv("FREEAPI")
-if freeapi is None:
-    raise Exception('Missing "FREEAPI" environment variable for your bot FREEAPI')
-
-moonshot_api_key= os.getenv("MOONSHOT_API_KEY")
-if moonshot_api_key is None:
-    raise Exception('Missing "MOONSHOT_API_KEY" environment variable for your bot MOONSHOT_API_KEY')
-
-dashscope_api_key= os.getenv("DASHSCOPE_API_KEY")
-if dashscope_api_key is None:
-    raise Exception('Missing "DASHSCOPE_API_KEY" environment variable for your bot DASHSCOPE_API_KEY')
 
 tjit_key= os.getenv("TJIT_KEY")
 if tjit_key is None:
