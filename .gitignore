@@ -1,4 +1,6 @@
 .env
+.venv
+.idea
 botpy.log*
 user_numbers.db
 __pycache__
