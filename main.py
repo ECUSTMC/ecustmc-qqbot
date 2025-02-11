@@ -104,7 +104,8 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
             if res.ok:
                 server_info = result
                 server=server.replace('.', '-')
-                description = server_info.get('description', {}).get('text', '无描述')
+                description_raw = server_info.get('description_raw', {})
+                description = description_raw.get('text', description_raw.get('translate', server_info.get('description', {}).get('text', '无描述')))
                 players_max = server_info.get('players', {}).get('max', '未知')
                 players_online = server_info.get('players', {}).get('online', '未知')
                 sample_players = server_info.get('players', {}).get('sample', [])
