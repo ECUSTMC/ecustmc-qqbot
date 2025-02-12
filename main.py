@@ -713,7 +713,7 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
     # 通过 r 获取 RCON 密码
     rcon_password = r.mc_rcon_password
     rcon_host = r.mc_server
-    rcon_port = r.mc_rcon_port
+    rcon_port = int(r.mc_rcon_port)
 
     if not params:
         await message.reply(content="请提供 Minecraft 服务器命令（say/list/永昼机/关闭永昼机）")
