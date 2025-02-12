@@ -806,7 +806,7 @@ async def query_server_status(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
-@Commands("/deepseekr")
+@Commands("/dsr")
 async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
     user_input = "".join(params) if params else "Hello world!"
 
@@ -827,42 +827,13 @@ async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
         )
 
         # 提取并发送模型响应
+        model_reasoning_content = completion.choices[0].message.reasoning_content
         model_response = completion.choices[0].message.content
-        await message.reply(content=f"Deepseek-R1:\n{model_response}")
+        await message.reply(content=f"Deepseek-R1:\n推理：\n{model_reasoning_content}\n回复：\n{model_response}")
 
     except Exception as e:
         # 错误处理
         await message.reply(content=f"调用 Deepseek-R1 大模型时出错: {str(e)}")
-
-    return True
-
-@Commands("/deepseek")
-async def query_deepseek(api: BotAPI, message: GroupMessage, params=None):
-    user_input = "".join(params) if params else "Hello world!"
-
-    try:
-        # 使用 OpenAI 类初始化客户端
-        client = OpenAI(api_key=r.baidu_api_key, base_url="http://oneapi.ecustvr.top/v1/")
-
-        # 调用大模型
-        completion = client.chat.completions.create(
-            model="deepseek-v3",
-            messages=[
-                {
-                    "role": "user",
-                    "content": user_input,
-                },
-            ],
-            temperature=0.3,
-        )
-
-        # 提取并发送模型响应
-        model_response = completion.choices[0].message.content
-        await message.reply(content=f"Deepseek:\n{model_response}")
-
-    except Exception as e:
-        # 错误处理
-        await message.reply(content=f"调用 Deepseek 大模型时出错: {str(e)}")
 
     return True
 
@@ -879,7 +850,6 @@ handlers = [
     remove_server,
     query_tarot,
     query_deepseek_r1,
-    query_deepseek,
     query_divinatory_symbol,
     query_ip_info,
     query_domain_info,
@@ -904,7 +874,7 @@ class EcustmcClient(botpy.Client):
                 # 调用大模型
                 client = OpenAI(api_key=r.ecust_api_key, base_url=r.ecust_url)
                 response = client.chat.completions.create(
-                    model="deepseek-chat",
+                    model=r.ecust_model,
                     messages=[
                         {"role": "user", "content": user_input}
                     ],
@@ -954,7 +924,7 @@ class EcustmcClient(botpy.Client):
 
             except Exception as e:
                 # 错误处理，防止大模型调用失败时崩溃
-                await message.reply(content=f"调用大模型时出错: {str(e)}")
+                await message.reply(content=f"调用出错: {str(e)}")
         else:
             # 如果用户没有输入内容
             await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")

@@ -67,6 +67,10 @@ ecust_url = os.getenv("ECUST_URL")
 if ecust_url is None:
     raise Exception('Missing "ECUST_URL" environment variable for your bot ECUST_URL')
 
+ecust_model = os.getenv("ECUST_MODEL")
+if ecust_model is None:
+    raise Exception('Missing "ECUST_MODEL" environment variable for your bot ecust_model')
+
 tjit_key= os.getenv("TJIT_KEY")
 if tjit_key is None:
     raise Exception('Missing "TJIT_KEY" environment variable for your bot TJIT_KEY')
