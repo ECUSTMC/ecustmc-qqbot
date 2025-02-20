@@ -548,6 +548,56 @@ async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+@Commands("vv")
+async def query_vv(api: BotAPI, message: GroupMessage, params=None):
+    # 如果没有提供查询参数，读取vv.txt文件获取表情名
+    if not params:
+        with open('vv.txt', 'r', encoding='utf-8') as file:
+            emote_list = file.readlines()
+        emote_name = random.choice(emote_list).strip()
+    else:
+        # 有查询参数，构建请求负载
+        query = params  # 例如，"复旦大学"
+        encoded_query = urllib.parse.quote(query)  # 对查询参数进行URL编码
+
+        # 发起POST请求
+        payload = {
+            "query": query,
+            "amount": 5
+        }
+
+        async with aiohttp.ClientSession() as session:
+            url = f'https://api.xy0v0.top/search?q={encoded_query}&n=5'
+            async with session.post(url, json=payload) as response:
+                # 解析返回的JSON数据
+                emotes = await response.json()
+                emote_name = random.choice(emotes)  # 从返回的列表中随机选择一个表情包文件名
+
+    # 拼接完整的URL
+    encoded_emote_name = urllib.parse.quote(emote_name)
+    emote_url = f"https://cn-sy1.rains3.com/clouddisk/clouddisk/images/{encoded_emote_name}"
+
+    # 上传表情包图片
+    uploadmedia = await api.post_group_file(
+        group_openid=message.group_openid,
+        file_type=1,
+        url=emote_url
+    )
+
+    # 构建回复内容
+    reply_content = (
+        f"\n"
+        f"{emote_name.rstrip('.png')}\n"
+    )
+
+    # 发送消息
+    await message.reply(
+        content=reply_content,
+        msg_type=7,
+        media=uploadmedia
+    )
+
+    return True
 
 @Commands("/求签")
 async def query_divinatory_symbol(api: BotAPI, message: GroupMessage, params=None):
