@@ -899,6 +899,7 @@ handlers = [
     add_server,
     remove_server,
     query_tarot,
+    query_vv,
     query_deepseek_r1,
     query_divinatory_symbol,
     query_ip_info,
