@@ -98,46 +98,84 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
         server = server.strip()  # 去除两端的空格
         if not server:
             continue
-        
-        async with session.post(f"https://mc.sjtu.cn/custom/serverlist/?query={server}") as res:
-            result = await res.json()
-            if res.ok:
-                server_info = result
+
+        if server == "mcmod.ecustvr.top":
+            headers = {'User-Agent': 'ecustmc-qqbot/1.0 (https://cnb.cool/ecustmc/ecustmc-qqbot)'}
+            async with session.get(f"https://api.mcsrvstat.us/2/{server}", headers=headers) as res:
+                server_info = await res.json()
                 server=server.replace('.', '-')
-                description_raw = server_info.get('description_raw', {})
-                if isinstance(description_raw, str):
-                    description_raw = {"text": description_raw}
-                description = description_raw.get('text', description_raw.get('translate', server_info.get('description', {}).get('text', '无描述')))
-                players_max = server_info.get('players', {}).get('max', '未知')
-                players_online = server_info.get('players', {}).get('online', '未知')
-                sample_players = server_info.get('players', {}).get('sample', [])
-                version = server_info.get('version', '未知')
+                if server_info.get('online'):
+                    players_online = server_info['players']['online']
+                    players_max = server_info['players']['max']
+                    description = server_info['motd']['raw'][0]
+                    sample_players = server_info.get('players', {}).get('list', [])
+                    version = server_info.get('version', 'N/A')
 
-                timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-                
-                # 拼接每个服务器的状态信息
-                reply_content += (
-                    f"\n"
-                    f"服务器地址: {server}\n"
-                    f"描述: {description}\n"
-                    f"在线玩家: {players_online}/{players_max}\n"
-                    f"版本: {version}\n"
-                    f"查询时间: {timestamp}\n"
-                )
-                
-                # 如果有在线玩家，显示他们的名字
-                if players_online > 0 and sample_players:
-                    reply_content += "正在游玩:\n"
-                    for player in sample_players:
-                        player_name = player.get('name', '未知')
-                        reply_content += f"- {player_name}\n"
-                reply_content += "-----------------------------\n"
+                    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                    
+                    # 拼接每个服务器的状态信息
+                    reply_content += (
+                        f"\n"
+                        f"服务器地址: {server}\n"
+                        f"描述: {description}\n"
+                        f"在线玩家: {players_online}/{players_max}\n"
+                        f"版本: {version}\n"
+                        f"查询时间: {timestamp}\n"
+                    )
+                    
+                    # 如果有在线玩家，显示他们的名字
+                    if players_online > 0 and sample_players:
+                        reply_content += "正在游玩:\n"
+                        for player in sample_players:
+                            player_name = player
+                            reply_content += f"- {player_name}\n"
+                    reply_content += "-----------------------------\n"
 
-            else:
-                reply_content += (
-                    f"\n查询 {server} 服务器信息失败\n"
-                    f"状态码: {res.status}\n"
-                )
+                else:
+                    reply_content += (
+                        f"\n查询 {server} 服务器信息失败\n"
+                        f"状态码: {res.status}\n"
+                    )
+        else:
+            async with session.post(f"https://mc.sjtu.cn/custom/serverlist/?query={server}") as res:
+                result = await res.json()
+                if res.ok:
+                    server_info = result
+                    server=server.replace('.', '-')
+                    description_raw = server_info.get('description_raw', {})
+                    if isinstance(description_raw, str):
+                        description_raw = {"text": description_raw}
+                    description = description_raw.get('text', description_raw.get('translate', server_info.get('description', {}).get('text', '无描述')))
+                    players_max = server_info.get('players', {}).get('max', '未知')
+                    players_online = server_info.get('players', {}).get('online', '未知')
+                    sample_players = server_info.get('players', {}).get('sample', [])
+                    version = server_info.get('version', '未知')
+
+                    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+                    
+                    # 拼接每个服务器的状态信息
+                    reply_content += (
+                        f"\n"
+                        f"服务器地址: {server}\n"
+                        f"描述: {description}\n"
+                        f"在线玩家: {players_online}/{players_max}\n"
+                        f"版本: {version}\n"
+                        f"查询时间: {timestamp}\n"
+                    )
+                    
+                    # 如果有在线玩家，显示他们的名字
+                    if players_online > 0 and sample_players:
+                        reply_content += "正在游玩:\n"
+                        for player in sample_players:
+                            player_name = player.get('name', '未知')
+                            reply_content += f"- {player_name}\n"
+                    reply_content += "-----------------------------\n"
+
+                else:
+                    reply_content += (
+                        f"\n查询 {server} 服务器信息失败\n"
+                        f"状态码: {res.status}\n"
+                    )
     
     # 发送回复
     if not reply_content:
