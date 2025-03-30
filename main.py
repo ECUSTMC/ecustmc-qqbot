@@ -133,7 +133,7 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
 
                 else:
                     reply_content += (
-                        f"\n查询 {server} 服务器信息失败\n"
+                        f"\n查询 {server} 服务器信息失败，1分钟后再试\n"
                         f"状态码: {res.status}\n"
                     )
         else:
@@ -146,6 +146,8 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
                     if isinstance(description_raw, str):
                         description_raw = {"text": description_raw}
                     description = description_raw.get('text', description_raw.get('translate', server_info.get('description', {}).get('text', '无描述')))
+                    if "服务器已离线..." in description:
+                        description = description.replace("...", "或查询失败")
                     players_max = server_info.get('players', {}).get('max', '未知')
                     players_online = server_info.get('players', {}).get('online', '未知')
                     sample_players = server_info.get('players', {}).get('sample', [])
