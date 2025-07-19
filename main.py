@@ -686,10 +686,11 @@ async def help(api: BotAPI, message: GroupMessage, params=None):
 @Commands("/ip")
 async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
     ip = "".join(params).strip() if params else None
-    # 检查是否是 IPv4 地址
+    
     def is_ipv4(ip):
         pattern = re.compile(r'^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$')
         return pattern.match(ip) is not None
+    
     def checkip(address):
         try:
             version = IPy.IP(address).version()
@@ -704,50 +705,62 @@ async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
         try:
             # 获取所有地址信息
             addresses = socket.getaddrinfo(domain, None)
-            # 提取 IP 地址
-            ip_addresses = [addr[4][0] for addr in addresses]
-            return ip_addresses[0]
+            # 提取所有IP地址
+            ip_addresses = list(set(addr[4][0] for addr in addresses))  # 去重
+            return ip_addresses
         except socket.gaierror:
             return None
     
-    if not checkip(ip):
-        ip = resolve_domain(ip)
+    def query_ipv4(ip):
+        api_url = f"https://ip.ecust.icu/find?ip={ip}"
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            result = response.json()
+            if result.get("code") == 200:
+                query = result["data"]["query"]
+                isp = query.get("isp", "未知ISP")
+                locale = query.get("locale", "未知地区")
+                return f"IPv4 地址 {ip} 的查询结果：\nISP: {isp}\n地区: {locale}\nPowered by Eric"
+            else:
+                return f"查询 IPv4 地址 {ip} 失败：{result.get('msg', '未知错误')}"
+        else:
+            return f"调用 IPv4 查询接口失败，状态码: {response.status_code}"
+
+    def query_ipv6(ip):
+        api_url = f"https://ip.zxinc.org/api.php?type=json&ip={ip}"
+        response = requests.get(api_url)
+        if response.status_code == 200:
+            result = response.json()
+            if result.get("code") == 0:
+                location = result["data"].get("location", "未知地区")
+                return f"IPv6 地址 {ip} 的查询结果：\n位置: {location}"
+            else:
+                return f"查询 IPv6 地址 {ip} 失败：{result.get('msg', '未知错误')}"
+        else:
+            return f"调用 IPv6 查询接口失败，状态码: {response.status_code}"
 
     try:
-        if not checkip(ip):
-            model_response = "输入的 IP地址/域名 格式不正确，请输入有效的 IPv4 或 IPv6 地址。"
-            
-        elif is_ipv4(ip):
-            # 如果是 IPv4 地址，调用第一个接口
-            api_url = f"https://ip.ecust.icu/find?ip={ip}"
-            response = requests.get(api_url)
-            if response.status_code == 200:
-                result = response.json()
-                if result.get("code") == 200:
-                    query = result["data"]["query"]
-                    isp = query.get("isp", "未知ISP")
-                    locale = query.get("locale", "未知地区")
-                    model_response = f"IPv4 地址 {ip} 的查询结果：\nISP: {isp}\n地区: {locale}\nPowered by Eric"
-                else:
-                    model_response = f"查询 IPv4 地址 {ip} 失败：{result.get('msg', '未知错误')}"
-            else:
-                model_response = f"调用 IPv4 查询接口失败，状态码: {response.status_code}"
-
+        if not ip:
+            model_response = "请输入要查询的IP地址或域名"
         else:
-            # 如果是 IPv6 地址，调用第二个接口
-            api_url = f"https://ip.zxinc.org/api.php?type=json&ip={ip}"
-            response = requests.get(api_url)
-            if response.status_code == 200:
-                result = response.json()
-                if result.get("code") == 0:
-                    location = result["data"].get("location", "未知地区")
-                    model_response = f"IPv6 地址 {ip} 的查询结果：\n位置: {location}"
+            if not checkip(ip):
+                ips = resolve_domain(ip)
+                if not ips:
+                    model_response = "输入的 IP地址/域名 格式不正确或无法解析，请输入有效的 IPv4/IPv6 地址或域名。"
                 else:
-                    model_response = f"查询 IPv6 地址 {ip} 失败：{result.get('msg', '未知错误')}"
+                    results = []
+                    for current_ip in ips:
+                        if is_ipv4(current_ip):
+                            results.append(query_ipv4(current_ip))
+                        else:
+                            results.append(query_ipv6(current_ip))
+                    model_response = "\n\n".join(results)
             else:
-                model_response = f"调用 IPv6 查询接口失败，状态码: {response.status_code}"
+                if is_ipv4(ip):
+                    model_response = query_ipv4(ip)
+                else:
+                    model_response = query_ipv6(ip)
 
-        # 回复查询结果
         await message.reply(content=model_response)
 
     except Exception as e:
