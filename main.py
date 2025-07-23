@@ -822,7 +822,6 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
 
     if not params:
         await message.reply(content="请提供 Minecraft 服务器命令（say/list/永昼机/关闭永昼机）")
-        return
     else:
         # 直接使用 params 作为 Minecraft 命令
         mc_command = params
@@ -1055,69 +1054,51 @@ async def fetch_groups_from_feishu(app_id: str, app_secret: str) -> list:
     
     return all_groups
 
-@Commands("/找群")
-async def find_group(api: BotAPI, message: GroupMessage, params=None):
-    """查询飞书群聊信息"""
+async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: str):
     try:
-        # 这里需要配置你的飞书应用ID和密钥
         app_id = "cli_a8f1d48265fc500e"
         app_secret = "u2NfRSgPlrI4KUhba3389eyj3LSa4aGR"
-        
-        # 获取群组数据
         groups = await fetch_groups_from_feishu(app_id, app_secret)
-        
         if not groups:
             await message.reply("获取群组信息失败，请稍后再试")
-            return True
-        
-        # 处理搜索参数
-        search_key = "".join(params).strip() if params else ""
-        
-        # 筛选群组
+            return
+
         matched_groups = []
         for group in groups:
             if (search_key.lower() in group["group_name"].lower() or 
                 search_key.lower() in group["description"].lower() or
                 search_key == group["group_id"]):
                 matched_groups.append(group)
-        
-        # 构建回复消息
+
         if not matched_groups:
             reply = f"没有找到包含 '{search_key}' 的群组"
         else:
-            # 头部信息
-            reply = (
-                f"🔍 找到 {len(matched_groups)} 个匹配的群组:\n\n"
-                "━━━━━━━━━━━━━━\n\n"
-            )
-            
-            # 每个群组的信息 (最多显示10个)
+            reply = f"🔍 找到 {len(matched_groups)} 个匹配的群组:\n\n━━━━━━━━━━━━━━\n\n"
             for group in matched_groups[:10]:
                 reply += (
-                    f"📌 群号: {group['group_id']}\n"
+                    f"🆔 群号: {group['group_id']}\n"
                     f"🏷️ 名称: {group['group_name']}\n"
                     f"👥 人数: {group['member_count']}/{group['max_member_count']}\n"
                     f"📝 描述: {group['description'][:50]}\n"
                 )
-                
-                # 处理加群链接
                 if group["url"]:
                     clean_url = group["url"].replace("https://", "").replace("http://", "")
                     new_url = f"https://mcskin.ecustvr.top/auth/qqbot/{clean_url}"
                     reply += f"🔗 加群链接: {new_url}\n"
-                
-                reply += "━━━━━━━━━━━━━━\n\n"
-            
-            # 如果结果超过10个，添加提示
+                reply += "━━━━━━━━━━━━━━\n"
             if len(matched_groups) > 10:
                 reply += f"📢 还有 {len(matched_groups)-10} 个结果未显示..."
         
+        reply += "\n👉 有想添加的群聊？立即填写表单：\nhttps://mcskin.ecustvr.top/auth/qqtj"
         await message.reply(content=reply)
-        
+
     except Exception as e:
-        error_msg = f"❌ 查询群组信息时发生错误: {str(e)}"
-        await message.reply(content=error_msg)
-    
+        await message.reply(content=f"❌ 查询群组信息时发生错误: {str(e)}")
+
+@Commands("/找群")
+async def find_group(api: BotAPI, message: GroupMessage, params=None):
+    search_key = "".join(params).strip() if params else ""
+    await internal_find_group(api, message, search_key)
     return True
 
 handlers = [
@@ -1156,56 +1137,59 @@ class EcustmcClient(botpy.Client):
         user_input = message.content.strip()  # 获取用户输入
         if user_input:
             try:
-                # 调用大模型
-                client = OpenAI(api_key=r.ecust_api_key, base_url=r.ecust_url)
-                response = client.chat.completions.create(
-                    model=r.ecust_model,
-                    messages=[
-                        {"role": "user", "content": user_input}
-                    ],
-                    stream=False
-                )
+                await internal_find_group(api=self.api, message=message, search_key=user_input)
+                return
+            
+                # # 调用大模型
+                # client = OpenAI(api_key=r.ecust_api_key, base_url=r.ecust_url)
+                # response = client.chat.completions.create(
+                #     model=r.ecust_model,
+                #     messages=[
+                #         {"role": "user", "content": user_input}
+                #     ],
+                #     stream=False
+                # )
 
-                # 提取大模型的回应
-                model_response = response.choices[0].message.content if response.choices else "没有有效的回应"
+                # # 提取大模型的回应
+                # model_response = response.choices[0].message.content if response.choices else "没有有效的回应"
 
-                model_response = model_response.replace('ecust.edu.cn', 'ecust-edu-cn')
+                # model_response = model_response.replace('ecust.edu.cn', 'ecust-edu-cn')
 
-                # 定义要替换的域名后缀及其对应的替换字符串
-                domain_replacements = {
-                    '.cn': '-cn',
-                    '.com': '-com',
-                    '.org': '-org',
-                    '.net': '-net',
-                    '.edu': '-edu',
-                    '.gov': '-gov',
-                    '.top': '-top',
-                    '.cc': '-cc',
-                    '.me': '-me',
-                    '.tv': '-tv',
-                    '.info': '-info',
-                    '.biz': '-biz',
-                    '.name': '-name',
-                    '.mobi': '-mobi',
-                    '.club': '-club',
-                    '.store': '-store',
-                    '.app': '-app',
-                    '.tech': '-tech',
-                    '.ai': '-ai',
-                    '.ink': '-ink',
-                    '.live': '-live',
-                    '.wiki': '-wiki',
-                    # 可以继续添加其他需要替换的域名后缀
-                }
+                # # 定义要替换的域名后缀及其对应的替换字符串
+                # domain_replacements = {
+                #     '.cn': '-cn',
+                #     '.com': '-com',
+                #     '.org': '-org',
+                #     '.net': '-net',
+                #     '.edu': '-edu',
+                #     '.gov': '-gov',
+                #     '.top': '-top',
+                #     '.cc': '-cc',
+                #     '.me': '-me',
+                #     '.tv': '-tv',
+                #     '.info': '-info',
+                #     '.biz': '-biz',
+                #     '.name': '-name',
+                #     '.mobi': '-mobi',
+                #     '.club': '-club',
+                #     '.store': '-store',
+                #     '.app': '-app',
+                #     '.tech': '-tech',
+                #     '.ai': '-ai',
+                #     '.ink': '-ink',
+                #     '.live': '-live',
+                #     '.wiki': '-wiki',
+                #     # 可以继续添加其他需要替换的域名后缀
+                # }
 
-                # 进行替换
-                for old, new in domain_replacements.items():
-                    model_response = model_response.replace(old, new)
+                # # 进行替换
+                # for old, new in domain_replacements.items():
+                #     model_response = model_response.replace(old, new)
                 
-                model_response += "\n\n⚠️由于QQAPI限制，服务器地址中间的“-”请自行换成“.”！"
+                # model_response += "\n\n⚠️由于QQAPI限制，服务器地址中间的“-”请自行换成“.”！"
 
-                # 回复模型生成的内容
-                await message.reply(content=f"\nECUST Helper:\n{model_response}")
+                # # 回复模型生成的内容
+                # await message.reply(content=f"\nECUST Helper:\n{model_response}")
 
             except Exception as e:
                 # 错误处理，防止大模型调用失败时崩溃
