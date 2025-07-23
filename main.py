@@ -1071,7 +1071,7 @@ async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: st
                 matched_groups.append(group)
 
         if not matched_groups:
-            reply = f"没有找到包含 '{search_key}' 的群组"
+            reply = f"没有找到包含 '{search_key}' 的群组\n"
         else:
             reply = f"🔍 找到 {len(matched_groups)} 个匹配的群组:\n\n━━━━━━━━━━━━━━\n\n"
             for group in matched_groups[:10]:
@@ -1085,11 +1085,11 @@ async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: st
                     clean_url = group["url"].replace("https://", "").replace("http://", "")
                     new_url = f"https://mcskin.ecustvr.top/auth/qqbot/{clean_url}"
                     reply += f"🔗 加群链接: {new_url}\n"
-                reply += "━━━━━━━━━━━━━━\n"
+                reply += "━━━━━━━━━━━━━━\n\n"
             if len(matched_groups) > 10:
                 reply += f"📢 还有 {len(matched_groups)-10} 个结果未显示..."
         
-        reply += "\n👉 有想添加的群聊？立即填写表单：\nhttps://mcskin.ecustvr.top/auth/qqtj"
+        reply += "👉 有想添加的群聊？立即填写表单：\nhttps://mcskin.ecustvr.top/auth/qqtj"
         await message.reply(content=reply)
 
     except Exception as e:
