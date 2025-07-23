@@ -597,27 +597,21 @@ async def query_vv(api: BotAPI, message: GroupMessage, params=None):
         with open('vv.txt', 'r', encoding='utf-8') as file:
             emote_list = file.readlines()
         emote_name = random.choice(emote_list).strip()
+        # 拼接完整的URL
+        encoded_emote_name = urllib.parse.quote(emote_name)
+        emote_url = f"https://cn-nb1.rains3.com/vvq/images/{encoded_emote_name}"
     else:
         # 有查询参数，构建请求负载
-        query = params  # 例如，"复旦大学"
+        query = params
         encoded_query = urllib.parse.quote(query)  # 对查询参数进行URL编码
 
-        # 发起POST请求
-        payload = {
-            "query": query,
-            "amount": 5
-        }
-
         async with aiohttp.ClientSession() as session:
-            url = f'https://api.xy0v0.top/search?q={encoded_query}&n=5'
-            async with session.post(url, json=payload) as response:
+            url = f'https://api.zvv.quest/search?q={encoded_query}&n=5'
+            async with session.get(url) as response:
                 # 解析返回的JSON数据
-                emotes = await response.json()
-                emote_name = random.choice(emotes)  # 从返回的列表中随机选择一个表情包文件名
-
-    # 拼接完整的URL
-    encoded_emote_name = urllib.parse.quote(emote_name)
-    emote_url = f"https://cn-sy1.rains3.com/clouddisk/clouddisk/images/{encoded_emote_name}"
+                result = await response.json()
+                emote_url = random.choice(result["data"])  # 从返回的列表中随机选择一个表情包文件名
+                emote_name = urllib.parse.unquote(emote_url.split('/')[-1].rstrip('.png'))  # 获取表情包文件名
 
     # 上传表情包图片
     uploadmedia = await api.post_group_file(
@@ -629,7 +623,7 @@ async def query_vv(api: BotAPI, message: GroupMessage, params=None):
     # 构建回复内容
     reply_content = (
         f"\n"
-        f"{emote_name.rstrip('.png')}\n"
+        f"{emote_name.rstrip('.png')}"
     )
 
     # 发送消息
