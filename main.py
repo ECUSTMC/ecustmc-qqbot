@@ -942,6 +942,184 @@ async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
 
     return True
 
+async def get_tenant_access_token(app_id: str, app_secret: str) -> str:
+    """获取飞书访问令牌"""
+    url = "https://open.feishu.cn/open-apis/auth/v3/tenant_access_token/internal"
+    headers = {"Content-Type": "application/json"}
+    payload = {"app_id": app_id, "app_secret": app_secret}
+    
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, json=payload) as response:
+                data = await response.json()
+                if data.get("code") == 0:
+                    return data["tenant_access_token"]
+                else:
+                    print(f"获取飞书访问令牌失败: {data}")
+                    return None
+    except Exception as e:
+        print(f"获取飞书访问令牌出错: {e}")
+        return None
+
+async def fetch_groups_from_feishu(app_id: str, app_secret: str) -> list:
+    """从飞书获取群组数据"""
+    token = await get_tenant_access_token(app_id, app_secret)
+    if not token:
+        return []
+    
+    all_groups = []
+    page_token = None
+    has_more = True
+    
+    try:
+        while has_more:
+            url = "https://open.feishu.cn/open-apis/bitable/v1/apps/Y9HBbtQoxawALxs3XK8cOY9pn8g/tables/tblVq51wR2ZPVax4/records/search?page_size=100"
+            if page_token:
+                url += f"&page_token={page_token}"
+            
+            headers = {
+                "Authorization": f"Bearer {token}",
+                "Content-Type": "application/json"
+            }
+            
+            payload = {
+                "sort": [{"field_name": "类别", "desc": False}],
+                "filter": {
+                    "conjunction": "and",
+                    "conditions": [{
+                        "field_name": "是否可信",
+                        "operator": "is",
+                        "value": ["true"]
+                    }]
+                }
+            }
+            
+            async with aiohttp.ClientSession() as session:
+                async with session.post(url, headers=headers, json=payload) as response:
+                    data = await response.json()
+                    if data.get("code") == 0:
+                        for item in data["data"]["items"]:
+                            fields = item["fields"]
+                            
+                            # 处理群号
+                            group_id = str(fields.get("QQ群号", ""))
+                            
+                            # 处理加群链接
+                            join_url = fields.get("加群链接", {}).get("link") if fields.get("加群链接") else None
+                            
+                            # 处理描述
+                            description = "暂无描述"
+                            if fields.get("描述"):
+                                description = "".join(
+                                    part["text"] for part in fields["描述"] 
+                                    if part.get("type") == "text"
+                                )
+                            
+                            # 处理群名称
+                            group_name = f"群组({group_id})"
+                            if fields.get("群名称"):
+                                group_name = "".join(
+                                    part["text"] for part in fields["群名称"]
+                                    if part.get("type") == "text"
+                                )
+                            
+                            # 处理群人数
+                            member_count = 0
+                            max_member_count = 0
+                            if fields.get("群人数"):
+                                count_text = "".join(
+                                    part["text"] for part in fields["群人数"]
+                                    if part.get("type") == "text"
+                                )
+                                match = re.search(r"(\d+)\s*\/\s*(\d+)", count_text)
+                                if match:
+                                    member_count = int(match.group(1))
+                                    max_member_count = int(match.group(2))
+                            
+                            all_groups.append({
+                                "group_id": group_id,
+                                "group_name": group_name,
+                                "description": description,
+                                "member_count": member_count,
+                                "max_member_count": max_member_count,
+                                "url": join_url
+                            })
+                        
+                        has_more = data["data"].get("has_more", False)
+                        page_token = data["data"].get("page_token")
+                    else:
+                        print(f"获取飞书数据失败: {data}")
+                        break
+    except Exception as e:
+        print(f"获取群组信息出错: {e}")
+    
+    return all_groups
+
+@Commands("/找群")
+async def find_group(api: BotAPI, message: GroupMessage, params=None):
+    """查询飞书群聊信息"""
+    try:
+        # 这里需要配置你的飞书应用ID和密钥
+        app_id = "cli_a8f1d48265fc500e"
+        app_secret = "u2NfRSgPlrI4KUhba3389eyj3LSa4aGR"
+        
+        # 获取群组数据
+        groups = await fetch_groups_from_feishu(app_id, app_secret)
+        
+        if not groups:
+            await message.reply("获取群组信息失败，请稍后再试")
+            return True
+        
+        # 处理搜索参数
+        search_key = "".join(params).strip() if params else ""
+        
+        # 筛选群组
+        matched_groups = []
+        for group in groups:
+            if (search_key.lower() in group["group_name"].lower() or 
+                search_key.lower() in group["description"].lower() or
+                search_key == group["group_id"]):
+                matched_groups.append(group)
+        
+        # 构建回复消息
+        if not matched_groups:
+            reply = f"没有找到包含 '{search_key}' 的群组"
+        else:
+            # 头部信息
+            reply = (
+                f"🔍 找到 {len(matched_groups)} 个匹配的群组:\n\n"
+                "━━━━━━━━━━━━━━\n\n"
+            )
+            
+            # 每个群组的信息 (最多显示10个)
+            for group in matched_groups[:10]:
+                reply += (
+                    f"📌 群号: {group['group_id']}\n"
+                    f"🏷️ 名称: {group['group_name']}\n"
+                    f"👥 人数: {group['member_count']}/{group['max_member_count']}\n"
+                    f"📝 描述: {group['description'][:50]}\n"
+                )
+                
+                # 处理加群链接
+                if group["url"]:
+                    clean_url = group["url"].replace("https://", "").replace("http://", "")
+                    new_url = f"https://mcskin.ecustvr.top/auth/qqbot/{clean_url}"
+                    reply += f"🔗 加群链接: {new_url}\n"
+                
+                reply += "━━━━━━━━━━━━━━\n\n"
+            
+            # 如果结果超过10个，添加提示
+            if len(matched_groups) > 10:
+                reply += f"📢 还有 {len(matched_groups)-10} 个结果未显示..."
+        
+        await message.reply(content=reply)
+        
+    except Exception as e:
+        error_msg = f"❌ 查询群组信息时发生错误: {str(e)}"
+        await message.reply(content=error_msg)
+    
+    return True
+
 handlers = [
     query_weather,
     query_ecustmc_server,
@@ -961,7 +1139,8 @@ handlers = [
     query_domain_info,
     query_mc_command,
     ping_info,
-    query_server_status
+    query_server_status,
+    find_group
 ]
 
 
