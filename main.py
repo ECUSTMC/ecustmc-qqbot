@@ -1064,10 +1064,11 @@ async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: st
             return
 
         matched_groups = []
+
         for group in groups:
-            if (search_key.lower() in group["group_name"].lower() or 
-                search_key.lower() in group["description"].lower() or
-                search_key == group["group_id"]):
+            if (search_key.replace(" ", "").lower() in group["group_name"].replace(" ", "").lower() or 
+                search_key.replace(" ", "").lower() in group["description"].replace(" ", "").lower() or
+                search_key.replace(" ", "") == group["group_id"]):
                 matched_groups.append(group)
 
         if not matched_groups:
@@ -1097,7 +1098,7 @@ async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: st
 
 @Commands("/找群")
 async def find_group(api: BotAPI, message: GroupMessage, params=None):
-    search_key = "".join(params).strip() if params else ""
+    search_key = "".join(params).strip().replace("群", "") if params else ""
     await internal_find_group(api, message, search_key)
     return True
 
@@ -1134,7 +1135,7 @@ class EcustmcClient(botpy.Client):
             if await handler(api=self.api, message=message):
                 return
         # 如果没有处理器处理，调用大模型
-        user_input = message.content.strip()  # 获取用户输入
+        user_input = message.content.strip().replace("群", "")  # 获取用户输入
         if user_input:
             try:
                 await internal_find_group(api=self.api, message=message, search_key=user_input)
