@@ -64,8 +64,11 @@ async def jrys(api: BotAPI, message: GroupMessage, params=None):
 
 @Commands("/今日人品")
 async def jrrp(api: BotAPI, message: GroupMessage, params=None):
+    with open('jrys.json', 'r', encoding='utf-8') as file:
+        jrys_data = json.load(file)
+    
     user = f"{message.author.member_openid}"
-    assigned_number = get_user_rp_number(user)
+    assigned_number = get_user_rp_number(user, jrys_data)
 
     reply = f"今日人品值：{assigned_number}，{get_range_description(int(assigned_number))}"
 

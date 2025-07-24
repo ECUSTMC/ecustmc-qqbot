@@ -80,23 +80,36 @@ def get_user_fortune_data(user_id, jrys_data):
     return random_number, number, fortune_data
 
 
-def get_user_rp_number(user_id):
-    """获取用户人品值"""
+def get_user_rp_number(user_id, jrys_data):
+    """获取用户人品值，与运势保持关联"""
     conn, cursor = init_user_numbers_db()
     today_date = datetime.now().strftime('%Y-%m-%d')
 
-    cursor.execute('SELECT number FROM user_numbers WHERE user_id = ? AND date = ?',
+    cursor.execute('SELECT random_number, number FROM user_numbers WHERE user_id = ? AND date = ?',
                    (user_id, today_date))
     row = cursor.fetchone()
 
     if row:
-        number = row[0]
+        random_number = row[0]
+        number = row[1]
+        fortune_data = jrys_data[str(random_number)][0]
     else:
-        number = random.randint(1, 100)
+        while True:
+            random_number = random.randint(1, 1433)
+            fortune_data = jrys_data.get(str(random_number))
+
+            if fortune_data:
+                fortune_data = fortune_data[0]
+                lucky_star = fortune_data['luckyStar']
+                number = get_fortune_number(lucky_star)
+
+                if number is not None:
+                    break
+
         cursor.execute('''
             INSERT OR REPLACE INTO user_numbers (user_id, random_number, number, date) 
             VALUES (?, ?, ?, ?)
-        ''', (user_id, number, number, today_date))
+        ''', (user_id, random_number, number, today_date))
         conn.commit()
 
     conn.close()
