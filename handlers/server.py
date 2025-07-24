@@ -11,8 +11,8 @@ import r
 
 @Commands("/服务器状态")
 async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
-    # 假设 r.mc_servers 包含了服务器列表，用逗号分隔
-    server_list = MC_SERVERS.split(",")
+    # 动态获取最新的服务器列表
+    server_list = r.mc_servers.split(",")
 
     reply_content = ""
     
@@ -123,7 +123,7 @@ async def add_server(api: BotAPI, message: GroupMessage, params=None):
         new_server = ''.join(params).strip()
 
         # 获取当前服务器列表
-        current_servers = MC_SERVERS.split(",")
+        current_servers = r.mc_servers.split(",")
 
         # 检查服务器是否已经存在
         if new_server in current_servers:
@@ -152,7 +152,7 @@ async def remove_server(api: BotAPI, message: GroupMessage, params=None):
         server_to_remove = ''.join(params).strip()
 
         # 获取当前服务器列表
-        current_servers = MC_SERVERS.split(",")
+        current_servers = r.mc_servers.split(",")
 
         # 检查服务器是否存在
         if server_to_remove not in current_servers:
