@@ -113,6 +113,19 @@ async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: st
 
         matched_groups = []
 
+        # 针对QQ敏感词限制的处理
+        # 敏感词映射字典，方便后续添加更多敏感词
+        sensitive_words_map = {
+            "ba": "Blue Archive",
+            # 可以在这里添加更多敏感词映射
+            # "敏感词（小写）": "替换词",
+        }
+        
+        # 检查并替换敏感词
+        search_key_lower = search_key.lower()
+        if search_key_lower in sensitive_words_map:
+            search_key = sensitive_words_map[search_key_lower]
+
         for group in groups:
             if (search_key.replace(" ", "").lower() in group["group_name"].replace(" ", "").lower() or 
                 search_key.replace(" ", "").lower() in group["description"].replace(" ", "").lower() or
