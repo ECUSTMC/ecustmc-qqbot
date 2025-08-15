@@ -93,12 +93,14 @@ async def daily_notice(api: BotAPI, message: GroupMessage, params=None):
                 notices = result
                 reply_content = ""
                 for notice in notices:
+                    clean_url = notice['link'].replace("https://", "").replace("http://", "")
+                    new_url = f"https://mcskin.ecustvr.top/auth/qqbot/{clean_url}"
                     reply_content += (
                         f"\n"
                         f"📢 {notice['title']}\n"
-                        f"🔗 {notice['link']}\n"
                         f"📅 {notice['date']}\n"
                         f"🏛️ {notice['source']}\n"
+                        f"🔗 {new_url}\n"
                     )
                 await message.reply(content=reply_content)
             else:
