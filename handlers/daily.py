@@ -81,3 +81,26 @@ async def daily_huangli(api: BotAPI, message: GroupMessage, params=None):
                 await message.reply(content="获取黄历失败")
                 
     return True
+
+
+@Commands("/通知")
+async def daily_notice(api: BotAPI, message: GroupMessage, params=None):
+    notice_url = "https://news.bestzyq.cn/news.json"
+    async with aiohttp.ClientSession() as session:
+        async with session.get(notice_url) as res:
+            result = await res.json()
+            if res.ok:
+                notices = result
+                reply_content = ""
+                for notice in notices:
+                    reply_content += (
+                        f"\n"
+                        f"📢 {notice['title']}\n"
+                        f"🔗 {notice['link']}\n"
+                        f"📅 {notice['date']}\n"
+                        f"🏛️ {notice['source']}\n"
+                    )
+                await message.reply(content=reply_content)
+            else:
+                await message.reply(content="获取通知失败")
+    return True

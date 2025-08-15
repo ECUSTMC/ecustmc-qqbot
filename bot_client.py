@@ -9,7 +9,7 @@ from botpy.message import GroupMessage
 # 导入所有处理器
 from handlers.weather import query_weather
 from handlers.server import query_ecustmc_server, add_server, remove_server, query_server_status
-from handlers.daily import daily_word, daily_huangli
+from handlers.daily import daily_word, daily_huangli, daily_notice
 from handlers.fortune import jrys, jrrp, query_tarot, query_divinatory_symbol
 from handlers.help import help, wiki
 from handlers.entertainment import query_vv
@@ -37,6 +37,7 @@ handlers = [
     query_ecustmc_server,
     daily_word,
     daily_huangli,
+    daily_notice,
     jrrp,
     jrys,
     help,
