@@ -91,6 +91,9 @@ async def daily_notice(api: BotAPI, message: GroupMessage, params=None):
             result = await res.json()
             if res.ok:
                 notices = result
+                if not notices:
+                    await message.reply(content="今日无新通知")
+                    return True
                 reply_content = ""
                 for notice in notices:
                     clean_url = notice['link'].replace("https://", "").replace("http://", "")
