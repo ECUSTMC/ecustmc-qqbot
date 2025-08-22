@@ -13,7 +13,7 @@ from handlers.daily import daily_word, daily_huangli, daily_notice
 from handlers.fortune import jrys, jrrp, query_tarot, query_divinatory_symbol
 from handlers.help import help, wiki
 from handlers.entertainment import query_vv
-from handlers.ai import query_deepseek_r1
+from handlers.ai import query_deepseek_r1, query_deepseek_chat
 from handlers.network_tools import query_ip_info, query_domain_info, ping_info
 from handlers.minecraft import query_mc_command
 from handlers.group_management import find_group, internal_find_group
@@ -47,6 +47,7 @@ handlers = [
     query_tarot,
     query_vv,
     query_deepseek_r1,
+    query_deepseek_chat,
     query_divinatory_symbol,
     query_ip_info,
     query_domain_info,
