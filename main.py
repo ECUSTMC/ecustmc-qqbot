@@ -1152,6 +1152,11 @@ class EcustmcClient(botpy.Client):
 
                 # # 定义要替换的域名后缀及其对应的替换字符串
                 # domain_replacements = {
+                #     '.com.cn': '-com-cn',
+                #     '.edu.cn': '-edu-cn',
+                #     '.gov.cn': '-gov-cn',
+                #     '.net.cn': '-net-cn',
+                #     '.org.cn': '-org-cn',
                 #     '.cn': '-cn',
                 #     '.com': '-com',
                 #     '.org': '-org',
