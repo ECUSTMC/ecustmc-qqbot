@@ -44,9 +44,6 @@ def _replace_domains(text: str) -> str:
     for old, new in domain_replacements.items():
         text = text.replace(old, new)
     
-    # 添加提示信息
-    text += "\n\n⚠️由于QQAPI限制，服务器地址中间的\"-\"请自行换成\".\"！"
-    
     return text
 
 
@@ -77,6 +74,10 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
             temperature=1.0,
         )
 
+        
+        # 添加提示信息
+        replace_text = "\n\n⚠️由于QQAPI限制，服务器地址中间的\"-\"请自行换成\".\"！"
+
         # 提取模型响应
         if include_reasoning:
             model_reasoning_content = completion.choices[0].message.reasoning_content
@@ -86,14 +87,14 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
             model_reasoning_content = _replace_domains(model_reasoning_content)
             model_response = _replace_domains(model_response)
             
-            await message.reply(content=f"Deepseek-Reasoner:\n推理：\n{model_reasoning_content}\n回复：\n{model_response}")
+            await message.reply(content=f"{model_name}:\n推理：\n{model_reasoning_content}\n\n回复：\n{model_response}{replace_text}")
         else:
             model_response = completion.choices[0].message.content
             
             # 对回复内容中的网址进行替换
             model_response = _replace_domains(model_response)
             
-            await message.reply(content=f"{model_name}:\n{model_response}")
+            await message.reply(content=f"{model_name}:\n{model_response}{replace_text}")
 
     except Exception as e:
         # 错误处理
