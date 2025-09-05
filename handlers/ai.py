@@ -3,7 +3,7 @@ from openai import OpenAI
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
-from config import BAIDU_API_KEY
+from config import MODEL_CONFIGS
 
 
 def _replace_domains(text: str) -> str:
@@ -50,11 +50,20 @@ def _replace_domains(text: str) -> str:
     return text
 
 
-async def _call_deepseek_model(model_name: str, user_input: str, message: GroupMessage, include_reasoning: bool = False):
-    """调用DeepSeek模型的共用函数"""
+async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage, include_reasoning: bool = False):
+    """调用AI模型的通用函数"""
     try:
-        # 使用 OpenAI 类初始化客户端
-        client = OpenAI(api_key=BAIDU_API_KEY, base_url="http://oneapi.ecustvr.top/v1/")
+        # 获取模型配置
+        config = MODEL_CONFIGS.get(model_name, {})
+        api_key = config.get("api_key")
+        base_url = config.get("base_url")
+        
+        if not api_key or not base_url:
+            await message.reply(content=f"模型 {model_name} 的API配置不完整")
+            return
+        
+        # 使用配置的API设置初始化客户端
+        client = OpenAI(api_key=api_key, base_url=base_url)
 
         # 调用大模型
         completion = client.chat.completions.create(
@@ -65,7 +74,7 @@ async def _call_deepseek_model(model_name: str, user_input: str, message: GroupM
                     "content": user_input,
                 },
             ],
-            temperature=1.3,
+            temperature=1.0,
         )
 
         # 提取模型响应
@@ -84,23 +93,22 @@ async def _call_deepseek_model(model_name: str, user_input: str, message: GroupM
             # 对回复内容中的网址进行替换
             model_response = _replace_domains(model_response)
             
-            await message.reply(content=f"Deepseek-Chat:\n{model_response}")
+            await message.reply(content=f"{model_name}:\n{model_response}")
 
     except Exception as e:
         # 错误处理
-        model_display_name = "Deepseek-Reasoner" if include_reasoning else "Deepseek-Chat"
-        await message.reply(content=f"调用 {model_display_name} 大模型时出错: {str(e)}")
+        await message.reply(content=f"调用 {model_name} 模型时出错: {str(e)}")
 
 
 @Commands("/dsr")
 async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
     user_input = "".join(params) if params else "你好"
-    await _call_deepseek_model("deepseek-reasoner", user_input, message, include_reasoning=True)
+    await _call_ai_model("deepseek-reasoner", user_input, message, include_reasoning=True)
     return True
 
 
 @Commands("/dsc")
 async def query_deepseek_chat(api: BotAPI, message: GroupMessage, params=None):
     user_input = "".join(params) if params else "你好"
-    await _call_deepseek_model("deepseek-chat", user_input, message, include_reasoning=False)
+    await _call_ai_model("deepseek-chat", user_input, message, include_reasoning=False)
     return True
