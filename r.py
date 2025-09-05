@@ -55,6 +55,23 @@ deepseek_api_key = os.getenv("DeepSeek_API_Key")
 if deepseek_api_key is None:
     raise Exception('Missing "DeepSeek_API_Key" environment variable for your bot DeepSeek_API_Key')
 
+# DeepSeek模型特定配置
+deepseek_chat_api_key = os.getenv("deepseek_chat_api_key")
+if deepseek_chat_api_key is None:
+    raise Exception('Missing "deepseek_chat_api_key" environment variable')
+
+deepseek_chat_url = os.getenv("deepseek_chat_url")  
+if deepseek_chat_url is None:
+    raise Exception('Missing "deepseek_chat_url" environment variable')
+
+deepseek_reasoner_api_key = os.getenv("deepseek_reasoner_api_key")
+if deepseek_reasoner_api_key is None:
+    raise Exception('Missing "deepseek_reasoner_api_key" environment variable')
+
+deepseek_reasoner_url = os.getenv("deepseek_reasoner_url")
+if deepseek_reasoner_url is None:
+    raise Exception('Missing "deepseek_reasoner_url" environment variable')
+
 baidu_api_key = os.getenv("Baidu_API_Key")
 if baidu_api_key is None:
     raise Exception('Missing "Baidu_API_Key" environment variable for your bot Baidu_API_Key')
