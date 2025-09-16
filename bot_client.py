@@ -17,6 +17,7 @@ from handlers.ai import query_deepseek_r1, query_deepseek_chat
 from handlers.network_tools import query_ip_info, query_domain_info, ping_info
 from handlers.minecraft import query_mc_command
 from handlers.group_management import find_group, internal_find_group
+from handlers.bus import query_bus
 
 from config import APPID, SECRET
 
@@ -54,7 +55,8 @@ handlers = [
     query_mc_command,
     ping_info,
     query_server_status,
-    find_group
+    find_group,
+    query_bus
 ]
 
 
