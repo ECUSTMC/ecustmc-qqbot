@@ -2,9 +2,11 @@
 import urllib.parse
 import random
 import aiohttp
+import json
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+import config
 
 
 @Commands("vv")
@@ -51,3 +53,51 @@ async def query_vv(api: BotAPI, message: GroupMessage, params=None):
     )
 
     return True
+
+
+@Commands("/三角洲密码")
+async def query_deltaforce_password(api: BotAPI, message: GroupMessage, params=None):
+    """查询三角洲行动密码"""
+    try:
+        # 构建API请求URL
+        api_url = f"https://api.makuo.cc/api/get.game.deltaforce?token={config.DELTAFORCE_API_TOKEN}"
+        
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url) as response:
+                if response.status != 200:
+                    await message.reply(content="三角洲行动API请求失败，请稍后再试")
+                    return False
+                
+                result = await response.json()
+                
+                if result["code"] != 200:
+                    await message.reply(content=f"三角洲行动API返回错误: {result['msg']}")
+                    return False
+                
+                # 构建回复内容
+                reply_content = "🔍 三角洲行动密码查询结果\n\n"
+                
+                # 添加所有地图信息，包括图片链接
+                for item in result["data"]:
+                    reply_content += f"🗺️ {item['map_name']}\n"
+                    reply_content += f"📍 {item['location']}\n" 
+                    reply_content += f"🔢 密码: {item['password']}\n"
+                    
+                    # 添加图片链接
+                    if item["image_urls"]:
+                        reply_content += "🖼️ 位置图: "
+                        for img_url in item["image_urls"]:
+                            reply_content += f"{img_url.replace("fs.img4399.com", "mcskin.ecustvr.top/auth/qqbot/fs.img4399.com")} "
+                        reply_content += "\n"
+                    
+                    reply_content += "\n"
+                
+                reply_content += f"⏰ 更新时间: {result['time']}\n"
+                
+                await message.reply(content=reply_content)
+
+                return True
+                
+    except Exception as e:
+        await message.reply(content=f"查询三角洲行动密码时发生错误: {str(e)}")
+        return False

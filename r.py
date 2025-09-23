@@ -103,3 +103,8 @@ if mc_server is None:
 mc_rcon_port = os.getenv("MC_RCON_PORT")
 if mc_rcon_port is None:
     raise Exception('Missing "MC_RCON_PORT" environment variable for your bot MC_RCON_PORT')
+
+# 三角洲行动API配置
+deltaforce_api_token = os.getenv("DELTAFORCE_API_TOKEN")
+if deltaforce_api_token is None:
+    raise Exception('Missing "DELTAFORCE_API_TOKEN" environment variable for Delta Force API')
