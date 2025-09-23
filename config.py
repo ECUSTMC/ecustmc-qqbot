@@ -42,3 +42,6 @@ MODEL_CONFIGS = {
     #     "base_url": "https://api.anthropic.com/v1/"
     # }
 }
+
+# 三角洲行动API配置
+DELTAFORCE_API_TOKEN = r.deltaforce_api_token
