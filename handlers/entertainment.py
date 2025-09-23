@@ -87,7 +87,7 @@ async def query_deltaforce_password(api: BotAPI, message: GroupMessage, params=N
                     if item["image_urls"]:
                         reply_content += "🖼️ 位置图: "
                         for img_url in item["image_urls"]:
-                            reply_content += f"{img_url.replace("fs.img4399.com", "mcskin.ecustvr.top/auth/qqbot/fs.img4399.com")} "
+                            reply_content += f"{img_url.replace('fs.img4399.com', 'mcskin.ecustvr.top/auth/qqbot/fs.img4399.com')} "
                         reply_content += "\n"
                     
                     reply_content += "\n"
