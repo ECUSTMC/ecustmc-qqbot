@@ -4,6 +4,7 @@ from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
 from config import MC_RCON_PASSWORD, MC_SERVER, MC_RCON_PORT
+import time
 
 
 @Commands("/mc")
@@ -25,6 +26,7 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
                 with MCRcon(rcon_host, rcon_password, port=rcon_port) as mcr:
                     # 执行多个命令
                     mcr.command("player bot_sleep spawn at -3200 55 9370 facing -90 0 in minecraft:overworld")
+                    time.sleep(1)  # 添加1000毫秒延迟
                     mcr.command("player bot_sleep use interval 20")
                     await message.reply(content="永昼机已启动")
             except Exception as e:
