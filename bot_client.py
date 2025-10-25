@@ -18,6 +18,7 @@ from handlers.network_tools import query_ip_info, query_domain_info, ping_info
 from handlers.minecraft import query_mc_command
 from handlers.group_management import find_group, internal_find_group
 from handlers.bus import query_bus
+from handlers.classroom import query_empty_classroom
 
 from config import APPID, SECRET
 
@@ -50,6 +51,7 @@ handlers = [
     query_deepseek_r1,
     query_deepseek_chat,
     query_divinatory_symbol,
+    query_empty_classroom,
     query_ip_info,
     query_domain_info,
     query_mc_command,
