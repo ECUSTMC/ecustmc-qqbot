@@ -1,0 +1,134 @@
+{
+    "status": 200,
+    "times": 2,
+    "message": null,
+    "debug": null,
+    "result": {
+        "pageSize": 100,
+        "pageNum": 1,
+        "resultAmount": 12,
+        "pageAmount": 1,
+        "result": [
+            {
+                "timeId": 21,
+                "routerId": 14,
+                "departureTime": "6:45",
+                "orderNumber": 1,
+                "weeks": "1,2,3,4,5,6,7",
+                "studentActivityStatus": "0",
+                "createTime": 1645605201000,
+                "id": 21
+            },
+            {
+                "timeId": 22,
+                "routerId": 14,
+                "departureTime": "6:45（晶）",
+                "orderNumber": 1,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645605239000,
+                "id": 22
+            },
+            {
+                "timeId": 23,
+                "routerId": 14,
+                "departureTime": "7:30",
+                "orderNumber": 2,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645605348000,
+                "id": 23
+            },
+            {
+                "timeId": 24,
+                "routerId": 14,
+                "departureTime": "8:00",
+                "orderNumber": 3,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645605372000,
+                "id": 24
+            },
+            {
+                "timeId": 25,
+                "routerId": 14,
+                "departureTime": "10:00",
+                "orderNumber": 4,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645685826000,
+                "id": 25
+            },
+            {
+                "timeId": 26,
+                "routerId": 14,
+                "departureTime": "12:10",
+                "orderNumber": 5,
+                "weeks": "1,2,3,4,5,6",
+                "studentActivityStatus": "0",
+                "createTime": 1645685886000,
+                "id": 26
+            },
+            {
+                "timeId": 27,
+                "routerId": 14,
+                "departureTime": "13:00",
+                "orderNumber": 6,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645685905000,
+                "id": 27
+            },
+            {
+                "timeId": 28,
+                "routerId": 14,
+                "departureTime": "14:00",
+                "orderNumber": 7,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645685922000,
+                "id": 28
+            },
+            {
+                "timeId": 29,
+                "routerId": 14,
+                "departureTime": "16:00",
+                "orderNumber": 8,
+                "weeks": "1,2,3,4,5,6,7",
+                "studentActivityStatus": "0",
+                "createTime": 1645685939000,
+                "id": 29
+            },
+            {
+                "timeId": 30,
+                "routerId": 14,
+                "departureTime": "17:15",
+                "orderNumber": 9,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645685957000,
+                "id": 30
+            },
+            {
+                "timeId": 31,
+                "routerId": 14,
+                "departureTime": "18:30",
+                "orderNumber": 10,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645685968000,
+                "id": 31
+            },
+            {
+                "timeId": 32,
+                "routerId": 14,
+                "departureTime": "20:00",
+                "orderNumber": 11,
+                "weeks": "1,2,3,4,5,7",
+                "studentActivityStatus": "0",
+                "createTime": 1645685981000,
+                "id": 32
+            }
+        ]
+    }
+}

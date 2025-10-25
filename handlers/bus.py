@@ -1,6 +1,4 @@
 """校车查询处理器"""
-import asyncio
-import aiohttp
 import json
 from datetime import datetime, time
 from botpy import BotAPI
@@ -17,55 +15,53 @@ async def query_bus(api: BotAPI, message: GroupMessage, params=None):
         count = min(int(params.replace(" ", "")), 13)  # 最多查询13班车
         count = max(count, 1)  # 至少查询1班车
     
-    url = "https://hqfw.ecust.edu.cn/hqecust/api/bus/departure/time/search"
-    headers = {
-        "Content-Type": "application/json",
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
-    }
-    
     try:
-        async with aiohttp.ClientSession() as session:
-            # 同时查询两个线路
-            tasks = []
-            for router_id in ["14", "15"]:
-                payload = {
-                    "pageSize": 100,
-                    "EQ": {"routerId": router_id},
-                    "ASC": ["orderNumber"]
-                }
-                tasks.append(session.post(url, json=payload, headers=headers))
+        # 从本地JSON文件读取校车时刻表
+        all_buses = []
+        
+        # 读取线路14（徐汇→奉贤）
+        try:
+            with open("bus_schedule_14.json", "r", encoding="utf-8") as f:
+                data_14 = json.load(f)
+                if data_14.get("status") == 200 and data_14.get("result", {}).get("result"):
+                    buses = data_14["result"]["result"]
+                    for bus in buses:
+                        bus["route_name"] = "徐汇→奉贤"
+                    all_buses.extend(buses)
+        except Exception as e:
+            await message.reply(content=f"读取徐汇→奉贤线路数据失败: {str(e)}")
+            return True
+        
+        # 读取线路15（奉贤→徐汇）
+        try:
+            with open("bus_schedule_15.json", "r", encoding="utf-8") as f:
+                data_15 = json.load(f)
+                if data_15.get("status") == 200 and data_15.get("result", {}).get("result"):
+                    buses = data_15["result"]["result"]
+                    for bus in buses:
+                        bus["route_name"] = "奉贤→徐汇"
+                    all_buses.extend(buses)
+        except Exception as e:
+            await message.reply(content=f"读取奉贤→徐汇线路数据失败: {str(e)}")
+            return True
+        
+        if all_buses:
+            # 找出每个方向最近的班次
+            xh_to_fx_buses = [bus for bus in all_buses if bus.get("route_name") == "徐汇→奉贤"]
+            fx_to_xh_buses = [bus for bus in all_buses if bus.get("route_name") == "奉贤→徐汇"]
             
-            responses = await asyncio.gather(*tasks)
+            next_xh_buses = find_next_buses(xh_to_fx_buses, count)
+            next_fx_buses = find_next_buses(fx_to_xh_buses, count)
             
-            all_buses = []
-            for i, response in enumerate(responses):
-                if response.status == 200:
-                    data = await response.json()
-                    if data.get("status") == 200 and data.get("result", {}).get("result"):
-                        router_id = "14" if i == 0 else "15"
-                        route_name = "徐汇→奉贤" if router_id == "14" else "奉贤→徐汇"
-                        buses = data["result"]["result"]
-                        for bus in buses:
-                            bus["route_name"] = route_name
-                        all_buses.extend(buses)
-            
-            if all_buses:
-                # 找出每个方向最近的班次
-                xh_to_fx_buses = [bus for bus in all_buses if bus.get("route_name") == "徐汇→奉贤"]
-                fx_to_xh_buses = [bus for bus in all_buses if bus.get("route_name") == "奉贤→徐汇"]
-                
-                next_xh_buses = find_next_buses(xh_to_fx_buses, count)
-                next_fx_buses = find_next_buses(fx_to_xh_buses, count)
-                
-                if next_xh_buses or next_fx_buses:
-                    reply_content = format_buses_info(next_xh_buses, next_fx_buses, count)
-                else:
-                    reply_content = "今日已无班次，恭喜你要露宿街头了🐶"
-                    
-                await message.reply(content=reply_content)
+            if next_xh_buses or next_fx_buses:
+                reply_content = format_buses_info(next_xh_buses, next_fx_buses, count)
             else:
-                await message.reply(content="校车查询失败，请稍后再试")
+                reply_content = "今日已无班次，恭喜你要露宿街头了🐶"
                 
+            await message.reply(content=reply_content)
+        else:
+            await message.reply(content="校车数据读取失败，请检查数据文件")
+            
     except Exception as e:
         await message.reply(content=f"查询校车时发生错误: {str(e)}")
     
@@ -74,7 +70,8 @@ async def query_bus(api: BotAPI, message: GroupMessage, params=None):
 
 def find_next_buses(bus_schedules, count=1):
     """从校车时刻表中找出最近的几班车"""
-    now = datetime.now()
+    # now = datetime.now()
+    now = datetime.strptime("2025-10-25 17:00:00", "%Y-%m-%d %H:%M:%S")
     current_time = now.time()
     current_weekday = now.weekday() + 1  # 周一=1, 周日=7
     

@@ -4,7 +4,7 @@ import aiohttp
 import botpy
 from botpy import BotAPI
 from botpy.manage import GroupManageEvent
-from botpy.message import GroupMessage
+from botpy.message import GroupMessage, DirectMessage
 
 # 导入所有处理器
 from handlers.weather import query_weather
@@ -68,6 +68,11 @@ class EcustmcClient(botpy.Client):
         """机器人就绪事件"""
         _log.info(f"robot[{self.robot.name}] is ready.")
 
+    async def on_c2c_message_create(self, message: DirectMessage):
+        """私聊消息处理"""
+        content = message.content
+        await message.reply(content=content)
+
     async def on_group_at_message_create(self, message: GroupMessage):
         """群组@消息处理"""
         for handler in handlers:
@@ -104,7 +109,10 @@ async def main():
     global session
     session = aiohttp.ClientSession()
     
-    intents = botpy.Intents(public_messages=True)
+    intents = botpy.Intents(
+        direct_message=True,
+        public_messages=True
+    )
     client = EcustmcClient(intents=intents, is_sandbox=False, log_level=30, timeout=60)
     
     try:
