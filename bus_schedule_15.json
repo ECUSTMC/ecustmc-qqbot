@@ -1,0 +1,144 @@
+{
+    "status": 200,
+    "times": 2,
+    "message": null,
+    "debug": null,
+    "result": {
+        "pageSize": 100,
+        "pageNum": 1,
+        "resultAmount": 13,
+        "pageAmount": 1,
+        "result": [
+            {
+                "timeId": 33,
+                "routerId": 15,
+                "departureTime": "06:30",
+                "orderNumber": 1,
+                "weeks": "1,2,3,4,5,6,7",
+                "studentActivityStatus": "0",
+                "createTime": 1645686027000,
+                "id": 33
+            },
+            {
+                "timeId": 34,
+                "routerId": 15,
+                "departureTime": "08:15",
+                "orderNumber": 2,
+                "weeks": "1,2,3,4,5,6,7",
+                "studentActivityStatus": "0",
+                "createTime": 1645686066000,
+                "id": 34
+            },
+            {
+                "timeId": 35,
+                "routerId": 15,
+                "departureTime": "10:00",
+                "orderNumber": 3,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645686078000,
+                "id": 35
+            },
+            {
+                "timeId": 36,
+                "routerId": 15,
+                "departureTime": "11:45",
+                "orderNumber": 4,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645686088000,
+                "id": 36
+            },
+            {
+                "timeId": 37,
+                "routerId": 15,
+                "departureTime": "12:30",
+                "orderNumber": 5,
+                "weeks": "1,2,3,4,5,6",
+                "studentActivityStatus": "0",
+                "createTime": 1645686105000,
+                "id": 37
+            },
+            {
+                "timeId": 38,
+                "routerId": 15,
+                "departureTime": "13:30",
+                "orderNumber": 6,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645686121000,
+                "id": 38
+            },
+            {
+                "timeId": 39,
+                "routerId": 15,
+                "departureTime": "15:30",
+                "orderNumber": 7,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645686135000,
+                "id": 39
+            },
+            {
+                "timeId": 40,
+                "routerId": 15,
+                "departureTime": "16:30",
+                "orderNumber": 8,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645690968000,
+                "id": 40
+            },
+            {
+                "timeId": 41,
+                "routerId": 15,
+                "departureTime": "16:30(晶)",
+                "orderNumber": 8,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645690991000,
+                "id": 41
+            },
+            {
+                "timeId": 42,
+                "routerId": 15,
+                "departureTime": "17:20",
+                "orderNumber": 9,
+                "weeks": "1,2,3,4,5,6,7",
+                "studentActivityStatus": "0",
+                "createTime": 1645691021000,
+                "id": 42
+            },
+            {
+                "timeId": 43,
+                "routerId": 15,
+                "departureTime": "18:15",
+                "orderNumber": 10,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645691032000,
+                "id": 43
+            },
+            {
+                "timeId": 44,
+                "routerId": 15,
+                "departureTime": "20:00",
+                "orderNumber": 11,
+                "weeks": "1,2,3,4,5",
+                "studentActivityStatus": "0",
+                "createTime": 1645691044000,
+                "id": 44
+            },
+            {
+                "timeId": 45,
+                "routerId": 15,
+                "departureTime": "21:00",
+                "orderNumber": 12,
+                "weeks": "1,2,3,4,5,7",
+                "studentActivityStatus": "0",
+                "createTime": 1645691066000,
+                "id": 45
+            }
+        ]
+    }
+}
