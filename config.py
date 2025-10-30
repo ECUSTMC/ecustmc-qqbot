@@ -45,3 +45,4 @@ MODEL_CONFIGS = {
 
 # 三角洲行动API配置
 DELTAFORCE_API_TOKEN = r.deltaforce_api_token
+CLASS_API_KEY = r.class_api_token

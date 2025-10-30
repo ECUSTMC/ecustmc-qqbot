@@ -108,3 +108,8 @@ if mc_rcon_port is None:
 deltaforce_api_token = os.getenv("DELTAFORCE_API_TOKEN")
 if deltaforce_api_token is None:
     raise Exception('Missing "DELTAFORCE_API_TOKEN" environment variable for Delta Force API')
+
+# 查询空教室API配置
+class_api_token = os.getenv("CLASS_API_KEY")
+if class_api_token is None:
+    raise Exception('Missing "CLASS_API_KEY" environment variable for CLASS_API_KEY')
