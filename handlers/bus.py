@@ -70,8 +70,7 @@ async def query_bus(api: BotAPI, message: GroupMessage, params=None):
 
 def find_next_buses(bus_schedules, count=1):
     """从校车时刻表中找出最近的几班车"""
-    # now = datetime.now()
-    now = datetime.strptime("2025-10-25 17:00:00", "%Y-%m-%d %H:%M:%S")
+    now = datetime.now()
     current_time = now.time()
     current_weekday = now.weekday() + 1  # 周一=1, 周日=7
     
