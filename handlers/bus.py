@@ -79,7 +79,7 @@ def find_next_buses(bus_schedules, count=1):
     for bus in bus_schedules:
         # 检查星期是否匹配
         weeks = bus.get("weeks", "").split(",")
-        if str(current_weekday) not in weeks and "7" not in weeks:
+        if str(current_weekday) not in weeks:
             continue
             
         # 解析发车时间
