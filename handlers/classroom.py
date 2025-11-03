@@ -14,7 +14,7 @@ async def query_empty_classroom(api: BotAPI, message: GroupMessage, params=None)
         help_text = (
             "📘 **空教室查询帮助**\n"
             "用法：/空教室 [教学楼] [楼层] [时间段]\n\n"
-            "🏫 教学楼：A B C D E 信息楼 体育馆 大活 实验二楼 实验六楼 四 七\n"
+            "🏫 教学楼：A B C D E 信息楼 体育馆 大活 实验二楼 实验六楼 四 七 研 八 实验十九楼 商学院 实验11楼 晨园\n"
             "🏢 楼层：0(全部) 或 1–5\n"
             "⏰ 时间段：\n"
             "1️⃣ 08:00～09:40\n"
@@ -28,6 +28,30 @@ async def query_empty_classroom(api: BotAPI, message: GroupMessage, params=None)
             "/空教室 D 0 4  → 查询D楼所有楼层第4节的空教室\n"
             "Powered by Eric"
         )
+        
+        # 添加教学楼对应值的说明
+        building_info = (
+            "\n\n📘 教学楼对应值说明：\n"
+            "A楼 - A\n"
+            "B楼 - B\n"
+            "C楼 - C\n"
+            "D楼 - D\n"
+            "E楼 - E\n"
+            "信息楼 - 信息楼\n"
+            "体育馆 - 体育馆\n"
+            "大学生活动中心 - 大活\n"
+            "实验二楼 - 实验二楼\n"
+            "实验六楼 - 实验六楼\n"
+            "第四教学楼 - 四\n"
+            "第七教学楼 - 七\n"
+            "研究生楼 - 研\n"
+            "第八教学楼 - 八\n"
+            "实验十九楼 - 实验十九楼\n"
+            "商学院 - 商学院\n"
+            "实验十一楼 - 实验11楼\n"
+            "晨园 - 晨园"
+        )
+        help_text += building_info
 
         # 无参数或帮助请求
         if not params or params.strip() in ["帮助", "help", "-h", "--help"]:
