@@ -72,6 +72,10 @@ deepseek_reasoner_url = os.getenv("deepseek_reasoner_url")
 if deepseek_reasoner_url is None:
     raise Exception('Missing "deepseek_reasoner_url" environment variable')
 
+baidu_url = os.getenv("Baidu_URL")
+if baidu_url is None:
+    raise Exception('Missing "baidu_url" environment variable for your bot baidu_url')
+
 baidu_api_key = os.getenv("Baidu_API_Key")
 if baidu_api_key is None:
     raise Exception('Missing "Baidu_API_Key" environment variable for your bot Baidu_API_Key')
