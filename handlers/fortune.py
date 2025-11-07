@@ -18,7 +18,7 @@ def get_range_description(score: int) -> str:
     if score == 69:
         return "这是什么意思啊，69696969696969696，哈哈哈哈哈哈哈哈哈"
     if score == 100:
-        return ""
+        return "哇，今天是元气满满的一天"
     
     if 0 < score < 10:
         return "好烂的运气啊，大概率你今天买泡面没调料没叉子，点外卖没餐具。"
