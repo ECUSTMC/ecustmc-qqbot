@@ -4,8 +4,66 @@ import aiohttp
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
-from config import API_APP_ID, API_APP_SECRET
+from config import API_APP_ID, API_APP_SECRET, MODEL_CONFIGS
+from openai import OpenAI
 
+async def ai_content_review(content: str) -> bool:
+    """
+    使用AI模型进行内容安全审核
+    返回True表示内容安全，False表示内容不安全
+    """
+    # 构建审核提示词
+    review_prompt = f"""请对以下内容进行安全审核，判断是否包含敏感、不适宜或违规内容：
+
+内容："{content}"
+
+请严格审核以下方面：
+1. 政治敏感内容（政治、政府、国家、领导人等）
+2. 暴力内容（暴力、杀戮、伤害等）
+3. 色情内容（色情、成人、性相关等）
+4. 违法内容（毒品、赌博、犯罪等）
+5. 敏感话题（宗教、民族、分裂等）
+6. 其他违规内容（仇恨言论、诽谤、攻击等）
+
+请只回答"安全"或"不安全"，不要给出其他解释。"""
+
+    try:
+        # 获取ERNIE-Speed-8K模型配置
+        config = MODEL_CONFIGS.get("ernie-speed-8k", {})
+        api_key = config.get("api_key")
+        base_url = config.get("base_url")
+        
+        if not api_key or not base_url:
+            # 如果配置不完整，使用备用审核机制
+            return await fallback_content_review(content)
+        
+        # 直接调用AI API进行审核
+        client = OpenAI(api_key=api_key, base_url=base_url)
+        
+        completion = client.chat.completions.create(
+            model="ernie-speed-8k",
+            messages=[
+                {
+                    "role": "user",
+                    "content": review_prompt,
+                },
+            ],
+            temperature=0.1,
+        )
+        
+        # 获取AI响应
+        ai_response = completion.choices[0].message.content
+
+        # 解析AI响应
+        if "不安全" in ai_response:
+            return False
+        
+        # 默认安全
+        return True
+        
+    except Exception as e:
+        # 如果AI审核失败，默认不安全
+        return False
 
 @Commands("/一言")
 async def daily_word(api: BotAPI, message: GroupMessage, params=None):
@@ -17,14 +75,28 @@ async def daily_word(api: BotAPI, message: GroupMessage, params=None):
                 content = result['hitokoto']
                 author_from = result['from']
                 author = result['from_who']
-                if author != author_from and author != None:
-                    author_from = f"{author}《{author_from}》"
-                reply_content = (
-                    f"\n"
-                    f"{content}"
-                    f"\n"
-                    f"——{author_from}"
-                )
+
+                # 使用AI模型进行内容安全审核
+                is_safe = await ai_content_review(content)
+                
+                if not is_safe:
+                    # 如果内容不安全，返回默认安全内容
+                    reply_content = (
+                        f"\n"
+                        f"🍃 微风吹过，思绪飘远..."
+                        f"\n"
+                        f"——今日份小确幸"
+                    )
+                else:
+                    # 内容安全，正常显示
+                    if author != author_from and author != None:
+                        author_from = f"{author}《{author_from}》"
+                    reply_content = (
+                        f"\n"
+                        f"{content}"
+                        f"\n"
+                        f"——{author_from}"
+                    )
 
                 await message.reply(content=reply_content)
             else:

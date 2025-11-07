@@ -32,6 +32,10 @@ MODEL_CONFIGS = {
         "api_key": r.deepseek_chat_api_key, 
         "base_url": r.deepseek_chat_url
     },
+    "ernie-speed-8k": {
+        "api_key": r.baidu_api_key,
+        "base_url": r.baidu_url
+    }
     # 可以继续添加其他模型的配置
     # "gpt-4": {
     #     "api_key": r.openai_api_key,
