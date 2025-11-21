@@ -35,7 +35,7 @@ async def ai_content_review(content: str) -> bool:
         
         if not api_key or not base_url:
             # 如果配置不完整，使用备用审核机制
-            return await fallback_content_review(content)
+            return False
         
         # 直接调用AI API进行审核
         client = OpenAI(api_key=api_key, base_url=base_url)
