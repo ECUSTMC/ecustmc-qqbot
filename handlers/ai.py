@@ -37,6 +37,8 @@ def _replace_domains(text: str) -> str:
         '.ink': '-ink',
         '.live': '-live',
         '.wiki': '-wiki',
+        '.ltd': '-ltd',
+        '.site': '-site',
         # 可以继续添加其他需要替换的域名后缀
     }
 
@@ -127,8 +129,15 @@ async def query_deepseek_chat(api: BotAPI, message: GroupMessage, params=None):
     return True
 
 
+async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
+    """群组调用 clawdbot 模型"""
+    user_input = message.content.strip() if hasattr(message, 'content') else "你好"
+    user_id = f"{message.author.member_openid}"
+    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False)
+    return True
+
 async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
-    """直接调用 clawdbot 模型，不侜为命令处理器"""
+    """私聊调用 clawdbot 模型"""
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
     user_id = f"{message.author.member_openid}"
     await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
