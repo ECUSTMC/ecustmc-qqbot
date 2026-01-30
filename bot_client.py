@@ -82,18 +82,21 @@ class EcustmcClient(botpy.Client):
             if await handler(api=self.api, message=message):
                 return
         
-        # 如果没有处理器处理，尝试群组查找
-        user_input = message.content.strip().replace("群", "")
-        if user_input:
-            try:
-                await chat_with_clawdbot(api=self.api, message=message)
+        # 如果没有处理器处理，尝试使用 chat_with_clawdbot
+        try:
+            if await chat_with_clawdbot(api=self.api, message=message):
                 return
-            except Exception as e:
-                # 错误处理，防止群组查找失败时崩溃
+        except Exception as e:
+            # 出错时回退到群组查找
+            user_input = message.content.strip().replace("群", "")
+            if user_input:
+                try:
+                    await internal_find_group(api=self.api, message=message, search_key=user_input)
+                    return
+                except Exception as find_error:
+                    await message.reply(content=f"调用出错: {str(e)}")
+            else:
                 await message.reply(content=f"调用出错: {str(e)}")
-        else:
-            # 如果用户没有输入内容
-            await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_add_robot(self, message: GroupManageEvent):
         """机器人被添加到群组事件"""

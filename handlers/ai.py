@@ -130,7 +130,11 @@ async def query_deepseek_chat(api: BotAPI, message: GroupMessage, params=None):
 @Commands("/chat")
 async def chat_with_clawdbot(api: BotAPI, message: GroupMessage, params=None):
     """使用 clawdbot 模型回复，不带思考，传入最终用户唯一标识符"""
-    user_input = "".join(params) if params else "你好"
+    if params:
+        user_input = "".join(params)
+    else:
+        # 如果没有 params，尝试从 message.content 中提取
+        user_input = message.content.strip() if hasattr(message, 'content') else "你好"
     # 对于 /chat 明确传入最终用户唯一标识符 user
     user_id = f"{message.author.member_openid}"
     await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
