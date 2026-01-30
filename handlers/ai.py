@@ -80,14 +80,22 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
 
         # 提取模型响应
         if include_reasoning:
-            model_reasoning_content = completion.choices[0].message.reasoning_content
-            model_response = completion.choices[0].message.content
+            message_obj = completion.choices[0].message
             
-            # 对推理内容和回复内容中的网址进行替换
-            model_reasoning_content = _replace_domains(model_reasoning_content)
-            model_response = _replace_domains(model_response)
+            # 安全获取推理内容，如果不存在则使用默认值
+            model_reasoning_content = getattr(message_obj, 'reasoning_content', None)
+            model_response = getattr(message_obj, 'content', '')
             
-            await message.reply(content=f"{model_name}:\n推理：\n{model_reasoning_content}\n\n回复：\n{model_response}{replace_text}")
+            if model_reasoning_content:
+                # 对推理内容和回复内容中的网址进行替换
+                model_reasoning_content = _replace_domains(model_reasoning_content)
+                model_response = _replace_domains(model_response)
+                
+                await message.reply(content=f"{model_name}:\n推理：\n{model_reasoning_content}\n\n回复：\n{model_response}{replace_text}")
+            else:
+                # 如果没有推理内容，只返回回复
+                model_response = _replace_domains(model_response)
+                await message.reply(content=f"{model_name}:\n{model_response}{replace_text}")
         else:
             model_response = completion.choices[0].message.content
             
