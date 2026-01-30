@@ -8,25 +8,28 @@ from config import MODEL_CONFIGS
 
 def _extract_user_id(message) -> str:
     """安全提取 message 中的用户唯一标识符，兼容群消息和私聊消息对象差异"""
-    author = getattr(message, 'author', None)
-    if not author:
-        return "unknown_user"
-
-    # 按优先级尝试常见字段
-    for attr in ('member_openid', 'openid', 'id', 'user_id', 'union_openid'):
-        val = getattr(author, attr, None)
-        if val:
-            return str(val)
-
-    # 如果作者是 dict 样式
     try:
-        for key in ('member_openid', 'openid', 'id', 'user_id', 'union_openid'):
-            if isinstance(author, dict) and author.get(key):
-                return str(author.get(key))
-    except Exception:
-        pass
-
-    return "unknown_user"
+        author = getattr(message, 'author', None)
+        if not author:
+            return None
+        
+        # 调试：打印 author 的所有属性
+        print(f"[DEBUG] author object: {author}, type: {type(author)}")
+        if hasattr(author, '__dict__'):
+            print(f"[DEBUG] author.__dict__: {author.__dict__}")
+        
+        # 群消息优先用 member_openid，私聊用 id
+        if hasattr(author, 'member_openid') and author.member_openid:
+            print(f"[DEBUG] Using member_openid: {author.member_openid}")
+            return str(author.member_openid)
+        elif hasattr(author, 'id') and author.id:
+            print(f"[DEBUG] Using id: {author.id}")
+            return str(author.id)
+    except Exception as e:
+        print(f"[DEBUG] Exception in _extract_user_id: {e}")
+    
+    print(f"[DEBUG] Returning None")
+    return None
 
 
 def _replace_domains(text: str) -> str:
@@ -156,7 +159,8 @@ async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     """群组调用 clawdbot 模型"""
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
     user_id = _extract_user_id(message)
-    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
+    # 群聊不需要传 user_id
+    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=None)
     return True
 
 async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
