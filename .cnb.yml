@@ -2,7 +2,7 @@ master:
   push:
     - name: sync
       runner:
-        cpus: 2
+        cpus: 1
       imports: https://cnb.cool/ecustmc/key/-/blob/main/env.yml
       stages:
         - name: sync to github
@@ -12,3 +12,4 @@ master:
             auth_type: https
             username: ${GITHUB_USERNAME}
             password: ${GITHUB_ACCESS_TOKEN}
+            force: true
