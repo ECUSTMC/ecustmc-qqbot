@@ -134,6 +134,12 @@ def _replace_domains(text: str) -> str:
         '.wiki': '-wiki',
         '.ltd': '-ltd',
         '.site': '-site',
+        '.online': '-online',
+        '.space': '-space',
+        '.website': '-website',
+        '.cloud': '-cloud',
+        '.md': '-md',
+        '.io': '-io',
         # 可以继续添加其他需要替换的域名后缀
     }
 
