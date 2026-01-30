@@ -13,22 +13,16 @@ def _extract_user_id(message) -> str:
         if not author:
             return None
         
-        # 调试：打印 author 的所有属性
-        print(f"[DEBUG] author object: {author}, type: {type(author)}")
-        if hasattr(author, '__dict__'):
-            print(f"[DEBUG] author.__dict__: {author.__dict__}")
-        
-        # 群消息优先用 member_openid，私聊用 id
+        # 群消息用 member_openid，私聊用 user_openid
         if hasattr(author, 'member_openid') and author.member_openid:
-            print(f"[DEBUG] Using member_openid: {author.member_openid}")
             return str(author.member_openid)
+        elif hasattr(author, 'user_openid') and author.user_openid:
+            return str(author.user_openid)
         elif hasattr(author, 'id') and author.id:
-            print(f"[DEBUG] Using id: {author.id}")
             return str(author.id)
     except Exception as e:
-        print(f"[DEBUG] Exception in _extract_user_id: {e}")
+        pass
     
-    print(f"[DEBUG] Returning None")
     return None
 
 
@@ -159,8 +153,7 @@ async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     """群组调用 clawdbot 模型"""
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
     user_id = _extract_user_id(message)
-    # 群聊不需要传 user_id
-    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=None)
+    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
     return True
 
 async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
