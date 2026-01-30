@@ -47,7 +47,7 @@ def _replace_domains(text: str) -> str:
     return text
 
 
-async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage, include_reasoning: bool = False):
+async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage, include_reasoning: bool = False, user_id: str = None):
     """调用AI模型的通用函数"""
     try:
         # 获取模型配置
@@ -62,17 +62,21 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
         # 使用配置的API设置初始化客户端
         client = OpenAI(api_key=api_key, base_url=base_url)
 
-        # 调用大模型
-        completion = client.chat.completions.create(
-            model=model_name,
-            messages=[
+        # 调用大模型；仅当显式传入 user_id 时才包含 user 字段
+        call_kwargs = {
+            "model": model_name,
+            "messages": [
                 {
                     "role": "user",
                     "content": user_input,
                 },
             ],
-            temperature=1.0,
-        )
+            "temperature": 1.0,
+        }
+        if user_id:
+            call_kwargs["user"] = user_id
+
+        completion = client.chat.completions.create(**call_kwargs)
 
         
         # 添加提示信息
@@ -120,4 +124,14 @@ async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
 async def query_deepseek_chat(api: BotAPI, message: GroupMessage, params=None):
     user_input = "".join(params) if params else "你好"
     await _call_ai_model("deepseek-chat", user_input, message, include_reasoning=False)
+    return True
+
+
+@Commands("/chat")
+async def chat_with_clawdbot(api: BotAPI, message: GroupMessage, params=None):
+    """使用 clawdbot 模型回复，不带思考，传入最终用户唯一标识符"""
+    user_input = "".join(params) if params else "你好"
+    # 对于 /chat 明确传入最终用户唯一标识符 user
+    user_id = f"{message.author.member_openid}"
+    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
     return True
