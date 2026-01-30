@@ -127,6 +127,14 @@ async def query_deepseek_chat(api: BotAPI, message: GroupMessage, params=None):
     return True
 
 
+async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
+    """直接调用 clawdbot 模型，不侜为命令处理器"""
+    user_input = message.content.strip() if hasattr(message, 'content') else "你好"
+    user_id = f"{message.author.member_openid}"
+    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
+    return True
+
+
 @Commands("/chat")
 async def chat_with_clawdbot(api: BotAPI, message: GroupMessage, params=None):
     """使用 clawdbot 模型回复，不带思考，传入最终用户唯一标识符"""
