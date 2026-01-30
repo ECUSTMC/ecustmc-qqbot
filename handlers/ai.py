@@ -6,6 +6,29 @@ from botpy.message import GroupMessage
 from config import MODEL_CONFIGS
 
 
+def _extract_user_id(message) -> str:
+    """安全提取 message 中的用户唯一标识符，兼容群消息和私聊消息对象差异"""
+    author = getattr(message, 'author', None)
+    if not author:
+        return "unknown_user"
+
+    # 按优先级尝试常见字段
+    for attr in ('member_openid', 'openid', 'id', 'user_id', 'union_openid'):
+        val = getattr(author, attr, None)
+        if val:
+            return str(val)
+
+    # 如果作者是 dict 样式
+    try:
+        for key in ('member_openid', 'openid', 'id', 'user_id', 'union_openid'):
+            if isinstance(author, dict) and author.get(key):
+                return str(author.get(key))
+    except Exception:
+        pass
+
+    return "unknown_user"
+
+
 def _replace_domains(text: str) -> str:
     """替换文本中的域名后缀以避免QQ API限制"""
     # 定义要替换的域名后缀及其对应的替换字符串
@@ -132,14 +155,14 @@ async def query_deepseek_chat(api: BotAPI, message: GroupMessage, params=None):
 async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     """群组调用 clawdbot 模型"""
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
-    user_id = f"{message.author.member_openid}"
-    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False)
+    user_id = _extract_user_id(message)
+    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
     return True
 
 async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     """私聊调用 clawdbot 模型"""
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
-    user_id = f"{message.author.member_openid}"
+    user_id = _extract_user_id(message)
     await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
     return True
 
