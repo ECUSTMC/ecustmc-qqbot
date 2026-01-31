@@ -28,8 +28,8 @@ async def ai_content_review(content: str) -> bool:
 请只回答"安全"或"不安全"，不要给出其他解释。"""
 
     try:
-        # 获取ERNIE-Speed-8K模型配置
-        config = MODEL_CONFIGS.get("ernie-speed-8k", {})
+        # 获取auto模型配置
+        config = MODEL_CONFIGS.get("auto", {})
         api_key = config.get("api_key")
         base_url = config.get("base_url")
         
@@ -41,7 +41,7 @@ async def ai_content_review(content: str) -> bool:
         client = OpenAI(api_key=api_key, base_url=base_url)
         
         completion = client.chat.completions.create(
-            model="ernie-speed-8k",
+            model="auto",
             messages=[
                 {
                     "role": "user",
