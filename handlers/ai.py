@@ -132,6 +132,7 @@ def _replace_domains(text: str) -> str:
         '.cloud': '-cloud',
         '.md': '-md',
         '.io': '-io',
+        '.py': '-py',
         # 可以继续添加其他需要替换的域名后缀
     }
 
