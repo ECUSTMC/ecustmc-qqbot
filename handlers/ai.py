@@ -51,7 +51,7 @@ async def _ai_safety_check(text_to_check: str) -> bool:
         False表示检测到敏感信息泄露（应阻止发送），True表示未检测到或无法判断
     """
     try:
-        config = MODEL_CONFIGS.get("deepseek-chat", {})
+        config = MODEL_CONFIGS.get("auto", {})
         api_key = config.get("api_key")
         base_url = config.get("base_url")
 
