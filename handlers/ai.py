@@ -71,7 +71,7 @@ async def _ai_safety_check(text_to_check: str) -> bool:
     3. 私钥片段（如以 -----BEGIN PRIVATE KEY----- 开头或包含长序列的 base64）
     4. 其它可用来认证/访问的凭证信息
 
-    请仅回复“泄露”或“安全”。如果文本中包含任何上述敏感信息，回复“泄露”。"""
+    请仅回复“泄露”或“没有泄露”。如果文本中包含任何上述敏感信息，回复“泄露”。"""
 
         response = client.chat.completions.create(
             model="deepseek-chat",
@@ -82,13 +82,11 @@ async def _ai_safety_check(text_to_check: str) -> bool:
 
         result = response.choices[0].message.content.strip().lower()
 
-        # 将包含“泄露”含义的模型判断视为不安全
-        leak_keywords = ['泄露', '泄漏', 'leak', 'leaked']
-        for keyword in leak_keywords:
-            if keyword in result:
-                return False
-
-        return True
+        # 将包含“没有泄露”含义的模型判断视为安全
+        if "没有泄露" in result:
+            return True
+        else:
+            return False
 
     except Exception as e:
         print(f"[WARNING] AI safety check error: {e}")
