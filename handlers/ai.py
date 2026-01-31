@@ -74,7 +74,7 @@ async def _ai_safety_check(text_to_check: str) -> bool:
     请仅回复“泄露”或“没有泄露”。如果文本中包含任何上述敏感信息，回复“泄露”。"""
 
         response = client.chat.completions.create(
-            model="deepseek-chat",
+            model="auto",
             messages=[{"role": "user", "content": safety_prompt}],
             stream=False,
             temperature=0.3,
