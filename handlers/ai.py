@@ -45,10 +45,10 @@ def _check_sensitive_input(user_input: str) -> bool:
 
 
 async def _ai_safety_check(text_to_check: str) -> bool:
-    """使用AI模型检查模型生成的输出是否包含不当或不安全内容
+    """使用AI模型检查模型生成的输出是否泄露秘钥/密码/凭证等敏感信息
 
     Returns:
-        False表示检测到不安全/不当内容（应阻止发送），True表示安全或无法判断
+        False表示检测到敏感信息泄露（应阻止发送），True表示未检测到或无法判断
     """
     try:
         config = MODEL_CONFIGS.get("deepseek-chat", {})
@@ -61,17 +61,17 @@ async def _ai_safety_check(text_to_check: str) -> bool:
 
         client = OpenAI(api_key=api_key, base_url=base_url)
 
-        safety_prompt = f"""你是一个安全审查员。请判断下面的文本是否包含不当、危险、恶意或会导致滥用的内容：
+        safety_prompt = f"""你是一个敏感信息检测器。请判断下面的文本是否包含明文或可识别形式的秘钥、密码、API Key、token、私钥、凭证或其他能用于认证/访问的敏感信息：
 
-文本："{text_to_check}"
+    文本："{text_to_check}"
 
-判断标准：
-1. 是否包含煽动暴力、违法犯罪的指示或步骤
-2. 是否包含泄露敏感信息或教唆越权的内容
-3. 是否包含明显的仇恨、骚扰或其他有害言论
-4. 是否包含会导致安全风险的具体技术细节（如可执行的注入/攻击命令）
+    判断目标（仅用于参考）：
+    1. 明文密码或带有 'password'、'passwd' 等提示的字符串
+    2. API Key、token、secret、access_key、secret_key 等形式的凭证
+    3. 私钥片段（如以 -----BEGIN PRIVATE KEY----- 开头或包含长序列的 base64）
+    4. 其它可用来认证/访问的凭证信息
 
-请仅回复“安全”或“不安全”。"""
+    请仅回复“泄露”或“安全”。如果文本中包含任何上述敏感信息，回复“泄露”。"""
 
         response = client.chat.completions.create(
             model="deepseek-chat",
@@ -82,8 +82,9 @@ async def _ai_safety_check(text_to_check: str) -> bool:
 
         result = response.choices[0].message.content.strip().lower()
 
-        unsafe_keywords = ['unsafe', '不安全', '危险', 'danger', '有害', 'malicious', '恶意']
-        for keyword in unsafe_keywords:
+        # 将包含“泄露”含义的模型判断视为不安全
+        leak_keywords = ['泄露', '泄漏', 'leak', 'leaked']
+        for keyword in leak_keywords:
             if keyword in result:
                 return False
 
