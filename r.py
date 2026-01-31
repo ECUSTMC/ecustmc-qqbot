@@ -92,6 +92,14 @@ ecust_model = os.getenv("ECUST_MODEL")
 if ecust_model is None:
     raise Exception('Missing "ECUST_MODEL" environment variable for your bot ecust_model')
 
+clawdbot_url = os.getenv("CLAWDBOT_URL")
+if clawdbot_url is None:
+    raise Exception('Missing "CLAWDBOT_URL" environment variable for your bot CLAWDBOT_URL')
+
+clawdbot_api_key = os.getenv("CLAWDBOT_API_Key")
+if clawdbot_api_key is None:
+    raise Exception('Missing "CLAWDBOT_API_Key" environment variable for your bot CLAWDBOT_API_Key')
+
 tjit_key= os.getenv("TJIT_KEY")
 if tjit_key is None:
     raise Exception('Missing "TJIT_KEY" environment variable for your bot TJIT_KEY')

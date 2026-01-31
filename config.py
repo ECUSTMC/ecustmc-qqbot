@@ -33,8 +33,8 @@ MODEL_CONFIGS = {
         "base_url": r.ecust_url
     },
     "clawdbot": {
-        "api_key": r.ecust_api_key, 
-        "base_url": r.ecust_url
+        "api_key": r.clawdbot_api_key, 
+        "base_url": r.clawdbot_url
     },
     "ernie-speed-8k": {
         "api_key": r.ecust_api_key,
