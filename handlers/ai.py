@@ -95,6 +95,11 @@ async def _ai_safety_check(text_to_check: str) -> bool:
 
 def _replace_domains(text: str) -> str:
     """替换文本中的域名后缀以避免QQ API限制"""
+    # 定义白名单URL（QQ白名单，不需要替换）
+    whitelist_urls = [
+        'https://mcskin.ecustvr.top/auth/',
+    ]
+    
     # 定义要替换的域名后缀及其对应的替换字符串
     domain_replacements = {
         '.com.cn': '-com-cn',
@@ -136,9 +141,21 @@ def _replace_domains(text: str) -> str:
         # 可以继续添加其他需要替换的域名后缀
     }
 
+    # 先用占位符替换白名单URL，避免被替换
+    placeholders = {}
+    for i, url in enumerate(whitelist_urls):
+        placeholder = f"__WHITELIST_URL_{i}__"
+        if url in text:
+            placeholders[placeholder] = url
+            text = text.replace(url, placeholder)
+    
     # 进行替换
     for old, new in domain_replacements.items():
         text = text.replace(old, new)
+    
+    # 恢复白名单URL
+    for placeholder, url in placeholders.items():
+        text = text.replace(placeholder, url)
     
     return text
 
