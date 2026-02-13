@@ -125,3 +125,7 @@ if deltaforce_api_token is None:
 class_api_token = os.getenv("CLASS_API_KEY")
 if class_api_token is None:
     raise Exception('Missing "CLASS_API_KEY" environment variable for CLASS_API_KEY')
+
+# AI功能开关配置
+ai_group_enabled = os.getenv("AI_GROUP_ENABLED", "false").lower() == "true"
+ai_direct_enabled = os.getenv("AI_DIRECT_ENABLED", "false").lower() == "true"

@@ -20,7 +20,7 @@ from handlers.group_management import find_group, internal_find_group
 from handlers.bus import query_bus
 from handlers.classroom import query_empty_classroom
 
-from config import APPID, SECRET
+from config import APPID, SECRET, AI_GROUP_ENABLED, AI_DIRECT_ENABLED
 
 _log = botpy.logging.get_logger()
 
@@ -73,11 +73,14 @@ class EcustmcClient(botpy.Client):
 
     async def on_c2c_message_create(self, message: DirectMessage):
         """私聊消息处理"""
-        try:
-            if await direct_chat_with_clawdbot(api=self.api, message=message):
-                return
-        except Exception as e:
-            # 出错时回退到简单回复
+        if AI_DIRECT_ENABLED:
+            try:
+                if await direct_chat_with_clawdbot(api=self.api, message=message):
+                    return
+            except Exception as e:
+                content = message.content
+                await message.reply(content=content)
+        else:
             content = message.content
             await message.reply(content=content)
 
@@ -87,21 +90,30 @@ class EcustmcClient(botpy.Client):
             if await handler(api=self.api, message=message):
                 return
         
-        # 如果没有处理器处理，尝试使用 group_chat_with_clawdbot
-        try:
-            if await group_chat_with_clawdbot(api=self.api, message=message):
-                return
-        except Exception as e:
-            # 出错时回退到群组查找
+        if AI_GROUP_ENABLED:
+            try:
+                if await group_chat_with_clawdbot(api=self.api, message=message):
+                    return
+            except Exception as e:
+                user_input = message.content.strip().replace("群", "")
+                if user_input:
+                    try:
+                        await internal_find_group(api=self.api, message=message, search_key=user_input)
+                        return
+                    except Exception as find_error:
+                        await message.reply(content=f"调用出错: {str(find_error)}")
+                else:
+                    await message.reply(content=f"调用出错: {str(e)}")
+        else:
             user_input = message.content.strip().replace("群", "")
             if user_input:
                 try:
                     await internal_find_group(api=self.api, message=message, search_key=user_input)
                     return
-                except Exception as find_error:
-                    await message.reply(content=f"调用出错: {str(find_error)}")
+                except Exception as e:
+                    await message.reply(content=f"调用出错: {str(e)}")
             else:
-                await message.reply(content=f"调用出错: {str(e)}")
+                await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_add_robot(self, message: GroupManageEvent):
         """机器人被添加到群组事件"""

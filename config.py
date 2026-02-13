@@ -54,3 +54,7 @@ MODEL_CONFIGS = {
 # 三角洲行动API配置
 DELTAFORCE_API_TOKEN = r.deltaforce_api_token
 CLASS_API_KEY = r.class_api_token
+
+# AI功能开关
+AI_GROUP_ENABLED = r.ai_group_enabled
+AI_DIRECT_ENABLED = r.ai_direct_enabled
