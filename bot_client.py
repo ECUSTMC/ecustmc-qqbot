@@ -78,11 +78,9 @@ class EcustmcClient(botpy.Client):
                 if await direct_chat_with_clawdbot(api=self.api, message=message):
                     return
             except Exception as e:
-                content = message.content
-                await message.reply(content=content)
-        else:
-            content = message.content
-            await message.reply(content=content)
+                _log.error(f"私聊AI调用失败: {str(e)}")
+        content = message.content
+        await message.reply(content=content)
 
     async def on_group_at_message_create(self, message: GroupMessage):
         """群组@消息处理"""
@@ -95,6 +93,7 @@ class EcustmcClient(botpy.Client):
                 if await group_chat_with_clawdbot(api=self.api, message=message):
                     return
             except Exception as e:
+                _log.error(f"群聊AI调用失败: {str(e)}")
                 user_input = message.content.strip().replace("群", "")
                 if user_input:
                     try:
