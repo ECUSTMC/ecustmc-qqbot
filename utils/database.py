@@ -3,6 +3,12 @@ import sqlite3
 from datetime import datetime
 import random
 import json
+import os
+
+
+def is_spring_festival() -> bool:
+    """判断春节期间运势增强功能是否开启"""
+    return os.getenv("SPRING_FESTIVAL_ENABLED", "false").lower() == "true"
 
 
 def init_user_numbers_db():
@@ -48,6 +54,7 @@ def get_user_fortune_data(user_id, jrys_data):
     """获取用户运势数据"""
     conn, cursor = init_user_numbers_db()
     today_date = datetime.now().strftime('%Y-%m-%d')
+    is_festival = is_spring_festival()
 
     cursor.execute('SELECT random_number, number FROM user_numbers WHERE user_id = ? AND date = ?',
                    (user_id, today_date))
@@ -65,6 +72,11 @@ def get_user_fortune_data(user_id, jrys_data):
             if fortune_data:
                 fortune_data = fortune_data[0]
                 lucky_star = fortune_data['luckyStar']
+                star_count = lucky_star.count('★')
+                
+                if is_festival and star_count < 4:
+                    continue
+                
                 number = get_fortune_number(lucky_star)
 
                 if number is not None:
@@ -84,6 +96,7 @@ def get_user_rp_number(user_id, jrys_data):
     """获取用户人品值，与运势保持关联"""
     conn, cursor = init_user_numbers_db()
     today_date = datetime.now().strftime('%Y-%m-%d')
+    is_festival = is_spring_festival()
 
     cursor.execute('SELECT random_number, number FROM user_numbers WHERE user_id = ? AND date = ?',
                    (user_id, today_date))
@@ -101,6 +114,11 @@ def get_user_rp_number(user_id, jrys_data):
             if fortune_data:
                 fortune_data = fortune_data[0]
                 lucky_star = fortune_data['luckyStar']
+                star_count = lucky_star.count('★')
+                
+                if is_festival and star_count < 4:
+                    continue
+                
                 number = get_fortune_number(lucky_star)
 
                 if number is not None:

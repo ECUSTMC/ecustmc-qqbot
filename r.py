@@ -129,3 +129,6 @@ if class_api_token is None:
 # AI功能开关配置
 ai_group_enabled = os.getenv("AI_GROUP_ENABLED", "false").lower() == "true"
 ai_direct_enabled = os.getenv("AI_DIRECT_ENABLED", "false").lower() == "true"
+
+# 春节期间运势增强功能开关
+spring_festival_enabled = os.getenv("SPRING_FESTIVAL_ENABLED", "false").lower() == "true"
