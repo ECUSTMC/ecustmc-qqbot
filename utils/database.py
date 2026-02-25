@@ -74,7 +74,7 @@ def get_user_fortune_data(user_id, jrys_data):
                 lucky_star = fortune_data['luckyStar']
                 star_count = lucky_star.count('★')
                 
-                if is_festival and star_count < 4:
+                if is_festival and star_count < 5:
                     continue
                 
                 number = get_fortune_number(lucky_star)
@@ -116,7 +116,7 @@ def get_user_rp_number(user_id, jrys_data):
                 lucky_star = fortune_data['luckyStar']
                 star_count = lucky_star.count('★')
                 
-                if is_festival and star_count < 4:
+                if is_festival and star_count < 5:
                     continue
                 
                 number = get_fortune_number(lucky_star)
