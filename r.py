@@ -51,6 +51,8 @@ mc_servers = os.getenv("MC_SERVERS")
 if mc_servers is None:
     raise Exception('Missing "MC_SERVERS" environment variable for your bot MC_SERVERS')
 
+mc_mcsrvstat_servers = os.getenv("MC_MCSRVSTAT_SERVERS", "")
+
 deepseek_api_key = os.getenv("DeepSeek_API_Key")
 if deepseek_api_key is None:
     raise Exception('Missing "DeepSeek_API_Key" environment variable for your bot DeepSeek_API_Key')

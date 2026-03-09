@@ -5,25 +5,24 @@ import requests
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
-from config import MC_SERVERS
+from config import MC_SERVERS, MC_MCSRVSTAT_SERVERS
 import r
 
 
 @Commands("/服务器状态")
 async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
-    # 动态获取最新的服务器列表
     server_list = r.mc_servers.split(",")
+    mcsrvstat_servers = r.mc_mcsrvstat_servers.split(",") if r.mc_mcsrvstat_servers else []
 
     reply_content = ""
     
-    # 遍历每个服务器并查询状态
     async with aiohttp.ClientSession() as session:
         for server in server_list:
-            server = server.strip()  # 去除两端的空格
+            server = server.strip()
             if not server:
                 continue
 
-            if server == "mcmod.ecustvr.top":
+            if server in mcsrvstat_servers:
                 headers = {'User-Agent': 'ecustmc-qqbot/1.0 (https://cnb.cool/ecustmc/ecustmc-qqbot)'}
                 async with session.get(f"https://api.mcsrvstat.us/2/{server}", headers=headers) as res:
                     server_info = await res.json()
