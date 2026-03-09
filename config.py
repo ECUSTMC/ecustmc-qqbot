@@ -14,6 +14,7 @@ TJIT_KEY = r.tjit_key
 
 # 服务器配置
 MC_SERVERS = r.mc_servers
+MC_MCSRVSTAT_SERVERS = r.mc_mcsrvstat_servers
 MC_RCON_PASSWORD = r.mc_rcon_password
 MC_SERVER = r.mc_server
 MC_RCON_PORT = int(r.mc_rcon_port)
