@@ -5,6 +5,7 @@ import botpy
 from botpy import BotAPI
 from botpy.manage import GroupManageEvent
 from botpy.message import GroupMessage, DirectMessage
+from botpy.types.message import MarkdownPayload
 
 # 导入所有处理器
 from handlers.weather import query_weather
@@ -15,7 +16,7 @@ from handlers.help import help, wiki
 from handlers.entertainment import query_vv, query_deltaforce_password
 from handlers.ai import chat_with_deepseek
 from handlers.network_tools import query_ip_info, query_domain_info, ping_info
-from handlers.minecraft import query_mc_command
+from handlers.minecraft import query_mc_command, MC_BUTTON_ACTIONS, execute_mc_command
 from handlers.group_management import find_group, internal_find_group
 from handlers.bus import query_bus
 from handlers.classroom import query_empty_classroom
@@ -123,6 +124,40 @@ class EcustmcClient(botpy.Client):
         """机器人被移出群组事件"""
         _log.info(f"robot[{self.robot.name}] left group ${event.group_openid}")
 
+    async def on_interaction_create(self, interaction):
+        """处理消息按钮交互事件（INTERACTION_CREATE）"""
+        try:
+            event_id = interaction.id
+            button_data = interaction.data.resolved.button_data if interaction.data and interaction.data.resolved else None
+            group_openid = interaction.group_openid
+
+            if not button_data:
+                await self.api.on_interaction_result(interaction_id=event_id, code=1)
+                return
+
+            # 处理MC按钮回调
+            if button_data in MC_BUTTON_ACTIONS:
+                mc_command = MC_BUTTON_ACTIONS[button_data]
+                reply_content = await execute_mc_command(self.api, mc_command, group_openid)
+                markdown = MarkdownPayload(content=reply_content)
+                await self.api.post_group_message(
+                    group_openid=group_openid,
+                    markdown=markdown,
+                    msg_type=2
+                )
+                # 回应交互事件成功
+                await self.api.on_interaction_result(interaction_id=event_id, code=0)
+            else:
+                # 未知按钮data，回应失败
+                await self.api.on_interaction_result(interaction_id=event_id, code=1)
+
+        except Exception as e:
+            _log.error(f"处理交互事件失败: {str(e)}")
+            try:
+                await self.api.on_interaction_result(interaction_id=interaction.id, code=1)
+            except Exception:
+                pass
+
 
 async def main():
     """主函数"""
@@ -131,7 +166,8 @@ async def main():
     
     intents = botpy.Intents(
         direct_message=True,
-        public_messages=True
+        public_messages=True,
+        interaction=True
     )
     client = EcustmcClient(intents=intents, is_sandbox=False, log_level=30, timeout=60)
     
