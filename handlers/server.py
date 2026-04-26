@@ -224,6 +224,7 @@ async def query_server_status(api: BotAPI, message: GroupMessage, params=None):
         await message.reply(markdown=markdown, msg_type=2)
 
     except Exception as e:
-        await message.reply(content=f"查询服务器状态时发生错误: {str(e)}")
+        await message.reply(content=f"查询服务器状态时发生错误")
+        print(f"Error: {e}")
 
     return True
