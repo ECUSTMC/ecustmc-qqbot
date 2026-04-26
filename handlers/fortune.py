@@ -103,26 +103,17 @@ async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
     else:
         description_to_use = f"正位：{description}"
 
-    # 上传图片
-    uploadmedia = await api.post_group_file(
-        group_openid=message.group_openid,
-        file_type=1,
-        url=img_url
-    )
-
-    # 构建回复内容
+    # 构建Markdown回复内容（使用QQ Markdown图片语法）
     reply_content = (
-        f"\n"
-        f"塔罗牌：{name}\n"
+        f"## 🔮 塔罗牌\n\n"
+        f"**{name}**\n\n"
+        f"![{name} #1036px #2076px]({img_url})\n\n"
         f"{description_to_use}"
     )
 
     # 发送消息
-    await message.reply(
-        content=reply_content,
-        msg_type=7,
-        media=uploadmedia
-    )
+    markdown = MarkdownPayload(content=reply_content)
+    await message.reply(markdown=markdown, msg_type=2)
 
     return True
 
