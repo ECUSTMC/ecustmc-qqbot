@@ -25,19 +25,15 @@ FEISHU_APP_SECRET = "u2NfRSgPlrI4KUhba3389eyj3LSa4aGR"
 
 # AI模型配置字典 - 支持不同模型使用不同的API设置
 MODEL_CONFIGS = {
-    "deepseek-reasoner": {
-        "api_key": r.ecust_api_key,
-        "base_url": r.ecust_url
-    },
-    "deepseek-chat": {
-        "api_key": r.ecust_api_key, 
-        "base_url": r.ecust_url
-    },
     "clawdbot": {
         "api_key": r.clawdbot_api_key, 
         "base_url": r.clawdbot_url
     },
     "auto": {
+        "api_key": r.ecust_api_key,
+        "base_url": r.ecust_url
+    },
+    "MiniMax-M2.5": {
         "api_key": r.ecust_api_key,
         "base_url": r.ecust_url
     }

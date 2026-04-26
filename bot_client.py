@@ -48,8 +48,6 @@ handlers = [
     remove_server,
     query_tarot,
     query_vv,
-    query_deepseek_r1,
-    query_deepseek_chat,
     query_divinatory_symbol,
     query_empty_classroom,
     query_ip_info,

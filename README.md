@@ -46,7 +46,7 @@ ecustmc-qqbot/
 - **network_tools.py**: `/ip`、`/nslookup`、`/ping` 命令
 - **minecraft.py**: `/mc` 命令
 - **entertainment.py**: `vv` 命令
-- **ai.py**: `/dsr` 命令
+- **ai.py**: AI对话功能
 - **group_management.py**: `/找群` 命令和群组查找功能
 - **help.py**: `/帮助`、`/wiki` 命令
 
