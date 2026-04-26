@@ -4,6 +4,7 @@ import random
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+from botpy.types.message import MarkdownPayload
 from utils.database import get_user_fortune_data, get_user_rp_number
 
 
