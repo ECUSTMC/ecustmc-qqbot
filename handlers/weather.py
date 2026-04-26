@@ -4,6 +4,7 @@ import aiohttp
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+from botpy.types.message import MarkdownPayload
 from config import WEATHER_API_TOKEN
 
 
@@ -37,22 +38,23 @@ async def query_weather(api: BotAPI, message: GroupMessage, params=None):
                 reporttime = fx_live_data.get("reporttime", "N/A")
 
                 reply_content = (
-                    f"🌤️ **校园天气**\n"
+                    f"# 校园天气\n"
                     f"\n"
-                    f"📍 **奉贤校区**\n"
+                    f"## 奉贤校区\n"
                     f"> 天气：{fx_weather} ｜ 温度：{fx_temperature}°C\n"
                     f"> 风向：{fx_winddirection} ｜ 风力：{fx_windpower}级\n"
                     f"> 湿度：{fx_humidity}%\n"
                     f"\n"
-                    f"📍 **徐汇校区**\n"
+                    f"## 徐汇校区\n"
                     f"> 天气：{xh_weather} ｜ 温度：{xh_temperature}°C\n"
                     f"> 风向：{xh_winddirection} ｜ 风力：{xh_windpower}级\n"
                     f"> 湿度：{xh_humidity}%\n"
                     f"\n"
-                    f"🕐 更新时间：{reporttime}"
+                    f"更新时间：{reporttime}"
                 )
 
-                await message.reply(content=reply_content)
+                markdown = MarkdownPayload(content=reply_content)
+                await message.reply(markdown=markdown, msg_type=2)
             else:
                 error_content = "查询失败，响应数据不正确"
                 await message.reply(content=error_content)
