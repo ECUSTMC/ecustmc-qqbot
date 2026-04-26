@@ -37,21 +37,19 @@ async def query_weather(api: BotAPI, message: GroupMessage, params=None):
                 reporttime = fx_live_data.get("reporttime", "N/A")
 
                 reply_content = (
+                    f"🌤️ **校园天气**\n"
                     f"\n"
-                    f"奉贤校区：\n"
-                    f"天气：{fx_weather}\n"
-                    f"温度：{fx_temperature}\n"
-                    f"风向：{fx_winddirection}\n"
-                    f"风力：{fx_windpower}\n"
-                    f"湿度：{fx_humidity}\n"
+                    f"📍 **奉贤校区**\n"
+                    f"> 天气：{fx_weather} ｜ 温度：{fx_temperature}°C\n"
+                    f"> 风向：{fx_winddirection} ｜ 风力：{fx_windpower}级\n"
+                    f"> 湿度：{fx_humidity}%\n"
                     f"\n"
-                    f"徐汇校区：\n"
-                    f"天气：{xh_weather}\n"
-                    f"温度：{xh_temperature}\n"
-                    f"风向：{xh_winddirection}\n"
-                    f"风力：{xh_windpower}\n"
-                    f"湿度：{xh_humidity}\n"
-                    f"更新时间：{reporttime}"
+                    f"📍 **徐汇校区**\n"
+                    f"> 天气：{xh_weather} ｜ 温度：{xh_temperature}°C\n"
+                    f"> 风向：{xh_winddirection} ｜ 风力：{xh_windpower}级\n"
+                    f"> 湿度：{xh_humidity}%\n"
+                    f"\n"
+                    f"🕐 更新时间：{reporttime}"
                 )
 
                 await message.reply(content=reply_content)
