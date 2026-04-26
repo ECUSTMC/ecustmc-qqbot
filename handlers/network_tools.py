@@ -5,6 +5,7 @@ import requests
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+from botpy.types.message import MarkdownPayload
 from utils.network import is_ipv4, checkip, resolve_domain, query_ipv4, query_ipv6
 from config import TJIT_KEY
 
@@ -35,7 +36,9 @@ async def query_ip_info(api: BotAPI, message: GroupMessage, params=None):
                 else:
                     model_response = query_ipv6(ip)
 
-        await message.reply(content=model_response)
+        markdown = MarkdownPayload(content=model_response)
+        await message.reply(markdown=markdown, msg_type=2)
+        return True
 
     except Exception as e:
         await message.reply(content=f"查询 IP 信息时发生错误: {str(e)}")
@@ -57,7 +60,9 @@ async def query_domain_info(api: BotAPI, message: GroupMessage, params=None):
         # 提取 IP 地址
         ip_addresses = list(set([addr[4][0] for addr in addresses]))
         ip_addresses_str = ", ".join(ip_addresses)
-        await message.reply(content="查询到的 IP 地址有：" + ip_addresses_str)
+        reply_content = f"## 🔍 NSLookup 查询\n\n**{ip}** 解析到的 IP 地址：\n\n{ip_addresses_str}"
+        markdown = MarkdownPayload(content=reply_content)
+        await message.reply(markdown=markdown, msg_type=2)
     except socket.gaierror:
         await message.reply(content="无效的域名或 IP 地址，请检查后重试。")
 
@@ -77,14 +82,15 @@ async def ping_info(api: BotAPI, message: GroupMessage, params=None):
         # 获取响应内容
         result = response.json()["data"][-1]["node"]
         random_node = random.sample(range(1, result), 6)
-        ping_content = '\nping测试结果为（随机6节点）：\n'
+        ping_content = f'## 🏓 Ping 测试\n\n**{domain}**（随机6节点）：\n\n'
         for i in random_node:
             url = 'https://api.tjit.net/api/ping/v2?key='+TJIT_KEY+'&node='+str(i)+'&host='+domain
             response = requests.post(url)
             result = response.json()
             if 'time' in result['data']:
-                ping_content += f"{result['data']['node_name']}-{result['data']['node_isp']}：{result['data']['time']}\n"
+                ping_content += f"- **{result['data']['node_name']}**-{result['data']['node_isp']}：{result['data']['time']}\n"
             else:
-                ping_content += f"{result['data']['node_name']}-{result['data']['node_isp']}：{result['data']['msg']}\n"
-        await message.reply(content=ping_content)
+                ping_content += f"- **{result['data']['node_name']}**-{result['data']['node_isp']}：{result['data']['msg']}\n"
+        markdown = MarkdownPayload(content=ping_content)
+        await message.reply(markdown=markdown, msg_type=2)
     return True

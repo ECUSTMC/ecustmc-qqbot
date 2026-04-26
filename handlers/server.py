@@ -5,6 +5,7 @@ import requests
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+from botpy.types.message import MarkdownPayload
 from config import MC_SERVERS, MC_MCSRVSTAT_SERVERS
 import r
 
@@ -38,21 +39,21 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
                         
                         # 拼接每个服务器的状态信息
                         reply_content += (
-                            f"\n"
-                            f"服务器地址: {server}\n"
-                            f"描述: {description}\n"
-                            f"在线玩家: {players_online}/{players_max}\n"
-                            f"版本: {version}\n"
-                            f"查询时间: {timestamp}\n"
+                            f"### 🖥️ {server}\n\n"
+                            f"> {description}\n\n"
+                            f"- 在线玩家：**{players_online}/{players_max}**\n"
+                            f"- 版本：**{version}**\n"
+                            f"- 查询时间：{timestamp}\n\n"
                         )
                         
                         # 如果有在线玩家，显示他们的名字
                         if players_online > 0 and sample_players:
-                            reply_content += "正在游玩:\n"
+                            reply_content += "**正在游玩：**\n"
                             for player in sample_players:
                                 player_name = player
                                 reply_content += f"- {player_name}\n"
-                        reply_content += "-----------------------------\n"
+                            reply_content += "\n"
+                        reply_content += "***\n"
 
                     else:
                         reply_content += (
@@ -80,21 +81,21 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
                         
                         # 拼接每个服务器的状态信息
                         reply_content += (
-                            f"\n"
-                            f"服务器地址: {server}\n"
-                            f"描述: {description}\n"
-                            f"在线玩家: {players_online}/{players_max}\n"
-                            f"版本: {version}\n"
-                            f"查询时间: {timestamp}\n"
+                            f"### 🖥️ {server}\n\n"
+                            f"> {description}\n\n"
+                            f"- 在线玩家：**{players_online}/{players_max}**\n"
+                            f"- 版本：**{version}**\n"
+                            f"- 查询时间：{timestamp}\n\n"
                         )
                         
                         # 如果有在线玩家，显示他们的名字
                         if players_online > 0 and sample_players:
-                            reply_content += "正在游玩:\n"
+                            reply_content += "**正在游玩：**\n"
                             for player in sample_players:
                                 player_name = player.get('name', '未知')
                                 reply_content += f"- {player_name}\n"
-                        reply_content += "-----------------------------\n"
+                            reply_content += "\n"
+                        reply_content += "***\n"
 
                     else:
                         reply_content += (
@@ -106,11 +107,16 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
     if not reply_content:
         reply_content = "未查询到任何服务器信息"
     
-    reply_content += '⚠️由于QQAPI限制，服务器地址中间的"-"请自行换成"."！'
+    reply_content += '\n\n⚠️由于QQAPI限制，服务器地址中间的"-"请自行换成"."！'
     
+    # 添加标题
+    if reply_content.startswith("###"):
+        reply_content = "## 🎮 MC 服务器状态\n\n" + reply_content
+    
+    markdown = MarkdownPayload(content=reply_content)
     await message.reply(
-        content=reply_content,
-        msg_type=0
+        markdown=markdown,
+        msg_type=2
     )
     
     return True
@@ -204,17 +210,18 @@ async def query_server_status(api: BotAPI, message: GroupMessage, params=None):
 
         # 构建信息内容
         info_message = (
-            f"服务器状态:\n"
-            f"运行时间: {uptime:.2f} 小时\n"
-            f"近期负载: {loadavg}\n"
-            f"总内存: {total_mem:.2f} GB\n"
-            f"可用内存: {free_mem:.2f} GB\n"
-            f"CPU 使用率: {cpu_usage_percent:.2f}%\n"
-            f"内存使用率: {mem_usage_percent:.2f}%"
+            f"## 📊 服务器状态\n\n"
+            f"- 运行时间：**{uptime:.2f}** 小时\n"
+            f"- 近期负载：**{loadavg}**\n"
+            f"- 总内存：**{total_mem:.2f}** GB\n"
+            f"- 可用内存：**{free_mem:.2f}** GB\n"
+            f"- CPU 使用率：**{cpu_usage_percent:.2f}%**\n"
+            f"- 内存使用率：**{mem_usage_percent:.2f}%**"
         )
 
         # 回复状态信息
-        await message.reply(content=info_message)
+        markdown = MarkdownPayload(content=info_message)
+        await message.reply(markdown=markdown, msg_type=2)
 
     except Exception as e:
         await message.reply(content=f"查询服务器状态时发生错误: {str(e)}")

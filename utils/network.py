@@ -44,7 +44,7 @@ def query_ipv4(ip):
             query = result["data"]["query"]
             isp = query.get("isp", "未知ISP")
             locale = query.get("locale", "未知地区")
-            return f"IPv4 地址 {ip} 的查询结果：\nISP: {isp}\n地区: {locale}\nPowered by Eric"
+            return f"### 🌐 IPv4 查询结果\n\n- 地址：**{ip}**\n- ISP：**{isp}**\n- 地区：**{locale}**\n\n***\nPowered by Eric"
         else:
             return f"查询 IPv4 地址 {ip} 失败：{result.get('msg', '未知错误')}"
     else:
@@ -59,7 +59,7 @@ def query_ipv6(ip):
         result = response.json()
         if result.get("code") == 0:
             location = result["data"].get("location", "未知地区")
-            return f"IPv6 地址 {ip} 的查询结果：\n位置: {location}"
+            return f"### 🌐 IPv6 查询结果\n\n- 地址：**{ip}**\n- 位置：**{location}**"
         else:
             return f"查询 IPv6 地址 {ip} 失败：{result.get('msg', '未知错误')}"
     else:

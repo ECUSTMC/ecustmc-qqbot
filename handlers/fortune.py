@@ -4,6 +4,7 @@ import random
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+from botpy.types.message import MarkdownPayload
 from utils.database import get_user_fortune_data, get_user_rp_number
 
 
@@ -51,14 +52,15 @@ async def jrys(api: BotAPI, message: GroupMessage, params=None):
     random_number, assigned_number, fortune_data = get_user_fortune_data(user, jrys_data)
 
     reply = (
-        f"\n"
-        f"今日运势：{fortune_data['fortuneSummary']}\n"
-        f"幸运星象：{fortune_data['luckyStar']}\n"
-        f"运势评述：{fortune_data['signText']}\n"
-        f"评述解读：{fortune_data['unSignText']}"
+        f"## 🔮 今日运势\n\n"
+        f"- 运势：**{fortune_data['fortuneSummary']}**\n"
+        f"- 幸运星象：**{fortune_data['luckyStar']}**\n\n"
+        f"> 运势评述：{fortune_data['signText']}\n\n"
+        f"> 评述解读：{fortune_data['unSignText']}"
     )
 
-    await message.reply(content=reply)
+    markdown = MarkdownPayload(content=reply)
+    await message.reply(markdown=markdown, msg_type=2)
     return True
 
 
@@ -70,9 +72,10 @@ async def jrrp(api: BotAPI, message: GroupMessage, params=None):
     user = f"{message.author.member_openid}"
     assigned_number = get_user_rp_number(user, jrys_data)
 
-    reply = f"今日人品值：{assigned_number}，{get_range_description(int(assigned_number))}"
+    reply = f"## 🎲 今日人品\n\n人品值：**{assigned_number}**\n\n{get_range_description(int(assigned_number))}"
 
-    await message.reply(content=reply)
+    markdown = MarkdownPayload(content=reply)
+    await message.reply(markdown=markdown, msg_type=2)
     return True
 
 
@@ -100,26 +103,17 @@ async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
     else:
         description_to_use = f"正位：{description}"
 
-    # 上传图片
-    uploadmedia = await api.post_group_file(
-        group_openid=message.group_openid,
-        file_type=1,
-        url=img_url
-    )
-
-    # 构建回复内容
+    # 构建Markdown回复内容（使用QQ Markdown图片语法）
     reply_content = (
-        f"\n"
-        f"塔罗牌：{name}\n"
+        f"## 🃏 塔罗牌\n\n"
+        f"**{name}**\n\n"
+        f"![{name}]({img_url})\n\n"
         f"{description_to_use}"
     )
 
     # 发送消息
-    await message.reply(
-        content=reply_content,
-        msg_type=7,
-        media=uploadmedia
-    )
+    markdown = MarkdownPayload(content=reply_content)
+    await message.reply(markdown=markdown, msg_type=2)
 
     return True
 
@@ -141,13 +135,14 @@ async def query_divinatory_symbol(api: BotAPI, message: GroupMessage, params=Non
 
     # 构建回复内容
     reply_content = (
-        f"\n"
-        f"卦象: {name}\n"
-        f"等级: {level}\n"
-        f"解读: \n{description}"
+        f"## 🏮 求签结果\n\n"
+        f"- 卦象：**{name}**\n"
+        f"- 等级：**{level}**\n\n"
+        f"> 解读：{description}"
     )
 
     # 发送消息
-    await message.reply(content=reply_content)
+    markdown = MarkdownPayload(content=reply_content)
+    await message.reply(markdown=markdown, msg_type=2)
 
     return True

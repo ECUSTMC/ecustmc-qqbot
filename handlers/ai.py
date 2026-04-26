@@ -3,6 +3,7 @@ from openai import OpenAI
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+from botpy.types.message import MarkdownPayload
 from config import MODEL_CONFIGS
 
 
@@ -227,9 +228,13 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
             model_response = _replace_domains(model_response)
 
             if model_reasoning_content:
-                await message.reply(content=f"{model_name}:\n推理：\n{model_reasoning_content}\n\n回复：\n{model_response}{replace_text}")
+                reply_md = f"## 🤖 {model_name}\n\n### 推理\n\n> {model_reasoning_content}\n\n### 回复\n\n{model_response}{replace_text}"
+                markdown = MarkdownPayload(content=reply_md)
+                await message.reply(markdown=markdown, msg_type=2)
             else:
-                await message.reply(content=f"{model_name}:\n{model_response}{replace_text}")
+                reply_md = f"## 🤖 {model_name}\n\n{model_response}{replace_text}"
+                markdown = MarkdownPayload(content=reply_md)
+                await message.reply(markdown=markdown, msg_type=2)
         else:
             model_response = completion.choices[0].message.content
 
@@ -242,7 +247,9 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
             # 对回复内容中的网址进行替换
             model_response = _replace_domains(model_response)
 
-            await message.reply(content=f"{model_name}:\n{model_response}{replace_text}")
+            reply_md = f"## 🤖 {model_name}\n\n{model_response}{replace_text}"
+            markdown = MarkdownPayload(content=reply_md)
+            await message.reply(markdown=markdown, msg_type=2)
 
     except Exception as e:
         # 错误处理

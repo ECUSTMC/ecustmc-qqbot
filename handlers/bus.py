@@ -4,6 +4,7 @@ from datetime import datetime, time
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+from botpy.types.message import MarkdownPayload
 
 
 @Commands("/校车")
@@ -58,7 +59,8 @@ async def query_bus(api: BotAPI, message: GroupMessage, params=None):
             else:
                 reply_content = "今日已无班次，恭喜你要露宿街头了🐶"
                 
-            await message.reply(content=reply_content)
+            markdown = MarkdownPayload(content=reply_content)
+            await message.reply(markdown=markdown, msg_type=2)
         else:
             await message.reply(content="校车数据读取失败，请检查数据文件")
             
@@ -110,33 +112,27 @@ def find_next_buses(bus_schedules, count=1):
 def format_buses_info(xh_buses, fx_buses, count):
     """格式化多班校车信息（双向各显示指定数量）"""
     
-    result = f"🚌 最近{count}班校车信息：\n\n"
+    result = f"## 🚌 最近{count}班校车信息\n\n"
     
     # 徐汇→奉贤方向
     if xh_buses:
-        result += "🔵 徐汇校区 → 奉贤校区：\n"
+        result += "### 🔵 徐汇校区 → 奉贤校区\n\n"
         for i, bus in enumerate(xh_buses, 1):
             departure_time = bus.get("departureTime", "未知时间")
-            
-            result += (
-                f"   {i}. 🕐 {departure_time}\n"
-            )
+            result += f"{i}. 🕐 **{departure_time}**\n"
         result += "\n"
     else:
-        result += "🔵 徐汇→奉贤：今日已无班次\n\n"
+        result += "### 🔵 徐汇→奉贤\n\n今日已无班次\n\n"
     
     # 奉贤→徐汇方向
     if fx_buses:
-        result += "🟠 奉贤校区 → 徐汇校区：\n"
+        result += "### 🟠 奉贤校区 → 徐汇校区\n\n"
         for i, bus in enumerate(fx_buses, 1):
             departure_time = bus.get("departureTime", "未知时间")
-            
-            result += (
-                f"   {i}. 🕐 {departure_time}\n"
-            )
+            result += f"{i}. 🕐 **{departure_time}**\n"
         result += "\n"
     else:
-        result += "🟠 奉贤→徐汇：今日已无班次\n\n"
+        result += "### 🟠 奉贤→徐汇\n\n今日已无班次\n\n"
     
-    result += "💡 提示：使用 /校车 3 查询双向各3班车，最多13班。"
+    result += "***\n💡 提示：使用 `/校车 3` 查询双向各3班车，最多13班。"
     return result
