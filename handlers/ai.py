@@ -249,20 +249,6 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
         await message.reply(content=f"调用 {model_name} 模型时出错: {str(e)}")
 
 
-@Commands("/dsr")
-async def query_deepseek_r1(api: BotAPI, message: GroupMessage, params=None):
-    user_input = "".join(params) if params else "你好"
-    await _call_ai_model("deepseek-reasoner", user_input, message, include_reasoning=True)
-    return True
-
-
-@Commands("/dsc")
-async def query_deepseek_chat(api: BotAPI, message: GroupMessage, params=None):
-    user_input = "".join(params) if params else "你好"
-    await _call_ai_model("deepseek-chat", user_input, message, include_reasoning=False)
-    return True
-
-
 async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     """群组调用 clawdbot 模型"""
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
@@ -295,20 +281,18 @@ async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
 
 
 @Commands("/chat")
-async def chat_with_clawdbot(api: BotAPI, message: GroupMessage, params=None):
-    """使用 clawdbot 模型回复，不带思考，传入最终用户唯一标识符"""
+async def chat_with_deepseek(api: BotAPI, message: GroupMessage, params=None):
+    """使用 MiniMax-M2.5 模型回复"""
     if params:
         user_input = "".join(params)
-    
-    # 检查敏感关键词
-    if _check_sensitive_input(user_input):
-        await message.reply(content="🚫 对不起，我不能回答关于密码、秘钥或其他敏感信息的问题。请出于安全考虑避免询问此类内容。")
-        return True
-    
     else:
         # 如果没有 params，尝试从 message.content 中提取
         user_input = message.content.strip() if hasattr(message, 'content') else "你好"
-    # 对于 /chat 明确传入最终用户唯一标识符 user
-    user_id = f"{message.author.member_openid}"
-    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
+
+    # NOTE: 安全检查暂时禁用，日后备用
+    # if _check_sensitive_input(user_input):
+    #     await message.reply(content="🚫 对不起，我不能回答关于密码、秘钥或其他敏感信息的问题。请出于安全考虑避免询问此类内容。")
+    #     return True
+
+    await _call_ai_model("MiniMax-M2.5", user_input, message, include_reasoning=False)
     return True

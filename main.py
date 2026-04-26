@@ -1,3 +1,4 @@
+# 已废弃
 import asyncio
 
 import botpy
