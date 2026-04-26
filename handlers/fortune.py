@@ -4,7 +4,6 @@ import random
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
-from botpy.types.message import MarkdownPayload
 from utils.database import get_user_fortune_data, get_user_rp_number
 
 
@@ -103,17 +102,26 @@ async def query_tarot(api: BotAPI, message: GroupMessage, params=None):
     else:
         description_to_use = f"正位：{description}"
 
-    # 构建Markdown回复内容（使用QQ Markdown图片语法）
+    # 上传图片
+    uploadmedia = await api.post_group_file(
+        group_openid=message.group_openid,
+        file_type=1,
+        url=img_url
+    )
+
+    # 构建回复内容
     reply_content = (
-        f"## 🃏 塔罗牌\n\n"
-        f"**{name}**\n\n"
-        f"![{name}]({img_url})\n\n"
+        f"\n"
+        f"塔罗牌：{name}\n"
         f"{description_to_use}"
     )
 
     # 发送消息
-    markdown = MarkdownPayload(content=reply_content)
-    await message.reply(markdown=markdown, msg_type=2)
+    await message.reply(
+        content=reply_content,
+        msg_type=7,
+        media=uploadmedia
+    )
 
     return True
 
