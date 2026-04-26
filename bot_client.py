@@ -140,13 +140,14 @@ class EcustmcClient(botpy.Client):
                 mc_command = MC_BUTTON_ACTIONS[button_data]
                 reply_content = await execute_mc_command(self.api, mc_command, group_openid)
                 markdown = MarkdownPayload(content=reply_content)
+                # 先回应交互事件成功，再发送被动回复消息
+                await self.api.on_interaction_result(interaction_id=event_id, code=0)
                 await self.api.post_group_message(
                     group_openid=group_openid,
                     markdown=markdown,
-                    msg_type=2
+                    msg_type=2,
+                    event_id=event_id  # 传入event_id，消息作为交互事件的被动回复，不算主动消息
                 )
-                # 回应交互事件成功
-                await self.api.on_interaction_result(interaction_id=event_id, code=0)
             else:
                 # 未知按钮data，回应失败
                 await self.api.on_interaction_result(interaction_id=event_id, code=1)
