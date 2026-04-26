@@ -127,12 +127,13 @@ class EcustmcClient(botpy.Client):
     async def on_interaction_create(self, interaction):
         """处理消息按钮交互事件（INTERACTION_CREATE）"""
         try:
-            event_id = interaction.id
+            interaction_id = interaction.id       # 交互ID，用于on_interaction_result
+            msg_event_id = interaction.event_id   # WebSocket事件ID，用于post_group_message的被动回复
             button_data = interaction.data.resolved.button_data if interaction.data and interaction.data.resolved else None
             group_openid = interaction.group_openid
 
             if not button_data:
-                await self.api.on_interaction_result(interaction_id=event_id, code=1)
+                await self.api.on_interaction_result(interaction_id=interaction_id, code=1)
                 return
 
             # 处理MC按钮回调
@@ -140,17 +141,18 @@ class EcustmcClient(botpy.Client):
                 mc_command = MC_BUTTON_ACTIONS[button_data]
                 reply_content = await execute_mc_command(self.api, mc_command, group_openid)
                 markdown = MarkdownPayload(content=reply_content)
-                # 先回应交互事件成功，再发送被动回复消息
-                await self.api.on_interaction_result(interaction_id=event_id, code=0)
+                # 先回应交互事件成功
+                await self.api.on_interaction_result(interaction_id=interaction_id, code=0)
+                # 用event_id发送被动回复消息，不算主动消息
                 await self.api.post_group_message(
                     group_openid=group_openid,
                     markdown=markdown,
                     msg_type=2,
-                    event_id=event_id  # 传入event_id，消息作为交互事件的被动回复，不算主动消息
+                    event_id=msg_event_id
                 )
             else:
                 # 未知按钮data，回应失败
-                await self.api.on_interaction_result(interaction_id=event_id, code=1)
+                await self.api.on_interaction_result(interaction_id=interaction_id, code=1)
 
         except Exception as e:
             _log.error(f"处理交互事件失败: {str(e)}")
