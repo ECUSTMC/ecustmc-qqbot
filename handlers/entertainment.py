@@ -6,7 +6,6 @@ import json
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
-from botpy.types.message import MarkdownPayload
 import config
 
 
@@ -33,15 +32,25 @@ async def query_vv(api: BotAPI, message: GroupMessage, params=None):
                 emote_url = random.choice(result["data"])  # 从返回的列表中随机选择一个表情包文件名
                 emote_name = urllib.parse.unquote(emote_url.split('/')[-1].rstrip('.png'))  # 获取表情包文件名
 
-    # 构建Markdown回复内容（使用QQ Markdown图片语法）
+    # 上传表情包图片
+    uploadmedia = await api.post_group_file(
+        group_openid=message.group_openid,
+        file_type=1,
+        url=emote_url
+    )
+
+    # 构建回复内容
     reply_content = (
-        f"## {emote_name.rstrip('.png')}\n\n"
-        f"![{emote_name.rstrip('.png')} #200px #200px]({emote_url})"
+        f"\n"
+        f"{emote_name.rstrip('.png')}"
     )
 
     # 发送消息
-    markdown = MarkdownPayload(content=reply_content)
-    await message.reply(markdown=markdown, msg_type=2)
+    await message.reply(
+        content=reply_content,
+        msg_type=7,
+        media=uploadmedia
+    )
 
     return True
 
@@ -66,26 +75,26 @@ async def query_deltaforce_password(api: BotAPI, message: GroupMessage, params=N
                     return False
                 
                 # 构建回复内容
-                reply_content = "## 🔍 三角洲行动密码\n\n"
+                reply_content = "🔍 三角洲行动密码查询结果\n\n"
                 
                 # 添加所有地图信息，包括图片链接
                 for item in result["data"]:
-                    reply_content += f"### 🗺️ {item['map_name']}\n\n"
-                    reply_content += f"- 📍 位置：**{item['location']}**\n"
-                    reply_content += f"- 🔢 密码：**{item['password']}**\n"
+                    reply_content += f"🗺️ {item['map_name']}\n"
+                    reply_content += f"📍 {item['location']}\n" 
+                    reply_content += f"🔢 密码: {item['password']}\n"
                     
-                    # 添加图片
-                    if item.get("image_urls"):
-                        for img_url in item["image_urls"]:
-                            proxied_url = img_url.replace('fs.img4399.com', 'mcskin.ecustvr.top/auth/qqbot/fs.img4399.com')
-                            reply_content += f"\n![{item['location']} #300px #200px]({proxied_url})\n"
+                    # 添加图片链接
+                    # if item["image_urls"]:
+                    #     reply_content += "🖼️ 位置图: "
+                    #     for img_url in item["image_urls"]:
+                    #         reply_content += f"{img_url.replace('fs.img4399.com', 'mcskin.ecustvr.top/auth/qqbot/fs.img4399.com')} "
+                    #     reply_content += "\n"
                     
                     reply_content += "\n"
                     
-                reply_content += f"***\n⏰ 更新时间：{result['time']}"
+                reply_content += f"⏰ 更新时间: {result['time']}\n"
                 
-                markdown = MarkdownPayload(content=reply_content)
-                await message.reply(markdown=markdown, msg_type=2)
+                await message.reply(content=reply_content)
 
                 return True
                 
