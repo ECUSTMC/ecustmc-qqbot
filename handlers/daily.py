@@ -4,6 +4,7 @@ import aiohttp
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+from botpy.types.message import MarkdownPayload
 from config import API_APP_ID, API_APP_SECRET, MODEL_CONFIGS
 from openai import OpenAI
 
@@ -82,9 +83,7 @@ async def daily_word(api: BotAPI, message: GroupMessage, params=None):
                 if not is_safe:
                     # 如果内容不安全，返回默认安全内容
                     reply_content = (
-                        f"\n"
-                        f"🍃 微风吹过，思绪飘远..."
-                        f"\n"
+                        f"🍃 微风吹过，思绪飘远...\n\n"
                         f"——今日份小确幸"
                     )
                 else:
@@ -92,13 +91,12 @@ async def daily_word(api: BotAPI, message: GroupMessage, params=None):
                     if author != author_from and author != None:
                         author_from = f"{author}《{author_from}》"
                     reply_content = (
-                        f"\n"
-                        f"{content}"
-                        f"\n"
+                        f"> {content}\n\n"
                         f"——{author_from}"
                     )
 
-                await message.reply(content=reply_content)
+                markdown = MarkdownPayload(content=reply_content)
+                await message.reply(markdown=markdown, msg_type=2)
             else:
                 error_content = (
                     f"获取一言失败"
@@ -135,19 +133,20 @@ async def daily_huangli(api: BotAPI, message: GroupMessage, params=None):
 
                 # 拼接黄历内容
                 reply_content = (
-                    f"\n"
-                    f"📅 日期: {date}\n"
-                    f"🀄 农历: {lunar_calendar}\n"
-                    f"💫 星座: {constellation}\n"
-                    f"🌞 节气: {solar_terms}\n"
-                    f"🐉 生肖: {chinese_zodiac}\n"
-                    f"📌 类型: {type_des}\n"
-                    f"✅ 宜: {suit}\n"
-                    f"❌ 忌: {avoid}\n"
+                    f"## 📅 今日黄历\n\n"
+                    f"- 日期：**{date}**\n"
+                    f"- 农历：**{lunar_calendar}**\n"
+                    f"- 星座：**{constellation}**\n"
+                    f"- 节气：**{solar_terms}**\n"
+                    f"- 生肖：**{chinese_zodiac}**\n"
+                    f"- 类型：**{type_des}**\n\n"
+                    f"✅ 宜：{suit}\n\n"
+                    f"❌ 忌：{avoid}"
                 )
 
                 # 发送回复
-                await message.reply(content=reply_content)
+                markdown = MarkdownPayload(content=reply_content)
+                await message.reply(markdown=markdown, msg_type=2)
             else:
                 # 错误处理
                 await message.reply(content="获取黄历失败")
@@ -166,18 +165,18 @@ async def daily_notice(api: BotAPI, message: GroupMessage, params=None):
                 if not notices:
                     await message.reply(content="今日无新通知")
                     return True
-                reply_content = ""
+                reply_content = "## 📢 今日通知\n\n"
                 for notice in notices:
                     clean_url = notice['link'].replace("https://", "").replace("http://", "")
                     new_url = f"https://mcskin.ecustvr.top/auth/qqbot/{clean_url}"
                     reply_content += (
-                        f"\n"
-                        f"📢 {notice['title']}\n"
-                        f"📅 {notice['date']}\n"
-                        f"🏛️ {notice['source']}\n"
-                        f"🔗 {new_url}\n"
+                        f"### {notice['title']}\n\n"
+                        f"- 📅 {notice['date']}\n"
+                        f"- 🏛️ {notice['source']}\n"
+                        f"- 🔗 [点击查看]({new_url})\n\n"
                     )
-                await message.reply(content=reply_content)
+                markdown = MarkdownPayload(content=reply_content)
+                await message.reply(markdown=markdown, msg_type=2)
             else:
                 await message.reply(content="获取通知失败")
     return True

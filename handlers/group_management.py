@@ -4,6 +4,7 @@ import aiohttp
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
+from botpy.types.message import MarkdownPayload
 from utils.network import get_tenant_access_token
 from config import FEISHU_APP_ID, FEISHU_APP_SECRET
 
@@ -135,24 +136,25 @@ async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: st
         if not matched_groups:
             reply = f"没有找到包含 '{search_key}' 的群组\n"
         else:
-            reply = f"🔍 找到 {len(matched_groups)} 个匹配的群组:\n\n━━━━━━━━━━━━━━\n\n"
+            reply = f"## 🔍 找到 {len(matched_groups)} 个匹配的群组\n\n"
             for group in matched_groups[:10]:
                 reply += (
-                    f"🆔 群号: {group['group_id']}\n"
-                    f"🏷️ 名称: {group['group_name']}\n"
-                    f"👥 人数: {group['member_count']}/{group['max_member_count']}\n"
-                    f"📝 描述: {group['description'][:50]}\n"
+                    f"### 🏷️ {group['group_name']}\n\n"
+                    f"- 🆔 群号：**{group['group_id']}**\n"
+                    f"- 👥 人数：**{group['member_count']}/{group['max_member_count']}**\n"
+                    f"- 📝 描述：{group['description'][:50]}\n"
                 )
                 if group["url"]:
                     clean_url = group["url"].replace("https://", "").replace("http://", "")
                     new_url = f"https://mcskin.ecustvr.top/auth/qqbot/{clean_url}"
-                    reply += f"🔗 加群链接: {new_url}\n"
-                reply += "━━━━━━━━━━━━━━\n\n"
+                    reply += f"- 🔗 [加群链接]({new_url})\n"
+                reply += "***\n\n"
             if len(matched_groups) > 10:
-                reply += f"📢 还有 {len(matched_groups)-10} 个结果未显示..."
+                reply += f"📢 还有 **{len(matched_groups)-10}** 个结果未显示..."
         
-        reply += "👉 有想添加的群聊？立即填写表单：\nhttps://mcskin.ecustvr.top/auth/qqtj"
-        await message.reply(content=reply)
+        reply += "\n\n👉 有想添加的群聊？立即[填写表单](https://mcskin.ecustvr.top/auth/qqtj)"
+        markdown = MarkdownPayload(content=reply)
+        await message.reply(markdown=markdown, msg_type=2)
 
     except Exception as e:
         await message.reply(content=f"❌ 查询群组信息时发生错误: {str(e)}")

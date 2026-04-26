@@ -56,9 +56,11 @@ async def query_weather(api: BotAPI, message: GroupMessage, params=None):
                 markdown = MarkdownPayload(content=reply_content)
                 await message.reply(markdown=markdown, msg_type=2)
             else:
-                error_content = "查询失败，响应数据不正确"
-                await message.reply(content=error_content)
+                error_content = "❌ 查询失败，响应数据不正确"
+                markdown = MarkdownPayload(content=error_content)
+                await message.reply(markdown=markdown, msg_type=2)
         else:
-            error_content = "查询失败，无法连接到天气服务"
-            await message.reply(content=error_content)
+            error_content = "❌ 查询失败，无法连接到天气服务"
+            markdown = MarkdownPayload(content=error_content)
+            await message.reply(markdown=markdown, msg_type=2)
         return True
