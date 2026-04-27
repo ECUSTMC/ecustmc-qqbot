@@ -356,8 +356,10 @@ async def chat_with_deepseek(api: BotAPI, message: GroupMessage, params=None):
     if params:
         user_input = "".join(params)
     else:
-        user_input = message.content.strip() if hasattr(message, 'content') else "你好"
+        user_input = ""
 
     image_urls = await _extract_image_urls(message)
+    if not user_input and not image_urls:
+        user_input = "你好"
     await _call_ai_model(ECUST_MODEL, user_input, message, include_reasoning=False, image_urls=image_urls)
     return True
