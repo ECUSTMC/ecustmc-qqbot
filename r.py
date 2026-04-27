@@ -69,9 +69,7 @@ ecust_url = os.getenv("ECUST_URL")
 if ecust_url is None:
     raise Exception('Missing "ECUST_URL" environment variable for your bot ECUST_URL')
 
-ecust_model = os.getenv("ECUST_MODEL")
-if ecust_model is None:
-    raise Exception('Missing "ECUST_MODEL" environment variable for your bot ecust_model')
+ecust_model = os.getenv("ECUST_MODEL", "MiniMax-M2.5")
 
 clawdbot_url = os.getenv("CLAWDBOT_URL")
 if clawdbot_url is None:

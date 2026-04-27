@@ -23,6 +23,8 @@ MC_RCON_PORT = int(r.mc_rcon_port)
 FEISHU_APP_ID = "cli_a8f1d48265fc500e"
 FEISHU_APP_SECRET = "u2NfRSgPlrI4KUhba3389eyj3LSa4aGR"
 
+ECUST_MODEL = r.ecust_model
+
 # AI模型配置字典 - 支持不同模型使用不同的API设置
 MODEL_CONFIGS = {
     "clawdbot": {
@@ -33,19 +35,10 @@ MODEL_CONFIGS = {
         "api_key": r.ecust_api_key,
         "base_url": r.ecust_url
     },
-    "MiniMax-M2.5": {
+    ECUST_MODEL: {
         "api_key": r.ecust_api_key,
         "base_url": r.ecust_url
     }
-    # 可以继续添加其他模型的配置
-    # "gpt-4": {
-    #     "api_key": r.openai_api_key,
-    #     "base_url": "https://api.openai.com/v1/"
-    # },
-    # "claude-3": {
-    #     "api_key": r.anthropic_api_key,
-    #     "base_url": "https://api.anthropic.com/v1/"
-    # }
 }
 
 # 三角洲行动API配置
