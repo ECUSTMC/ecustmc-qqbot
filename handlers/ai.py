@@ -350,7 +350,7 @@ async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     return True
 
 
-@Commands("/chat")
+@Commands("/ai")
 async def chat_with_deepseek(api: BotAPI, message: GroupMessage, params=None):
     """使用 /chat 命令调用模型回复"""
     if params:
