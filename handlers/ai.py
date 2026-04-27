@@ -37,6 +37,7 @@ def _build_message_content(user_input: str, image_urls: list) -> list:
     """构建OpenAI兼容的多模态消息content
 
     如果有图片则返回多模态格式列表，否则返回纯文本字符串
+    当有图片但无文字时，自动添加图片描述提示
     """
     if not image_urls:
         return user_input
@@ -44,6 +45,8 @@ def _build_message_content(user_input: str, image_urls: list) -> list:
     content = []
     if user_input:
         content.append({"type": "text", "text": user_input})
+    else:
+        content.append({"type": "text", "text": "请描述这张图片的内容"})
     for url in image_urls:
         content.append({"type": "image_url", "image_url": {"url": url}})
     return content
