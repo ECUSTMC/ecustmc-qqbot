@@ -1,10 +1,52 @@
 """AI相关处理器"""
+import os
+import uuid
+import aiohttp
 from openai import OpenAI
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload
-from config import MODEL_CONFIGS, ECUST_MODEL
+from config import MODEL_CONFIGS, ECUST_MODEL, IMAGE_SAVE_DIR, IMAGE_BASE_URL
+
+
+async def _download_and_save_image(image_url: str) -> str:
+    """下载图片并保存到本地目录，返回公开可访问的URL"""
+    try:
+        os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)
+
+        ext = ".png"
+        filename = f"{uuid.uuid4().hex}{ext}"
+        save_path = os.path.join(IMAGE_SAVE_DIR, filename)
+
+        async with aiohttp.ClientSession() as session:
+            async with session.get(image_url) as resp:
+                if resp.status != 200:
+                    return None
+                with open(save_path, "wb") as f:
+                    f.write(await resp.read())
+
+        public_url = IMAGE_BASE_URL.rstrip("/") + "/" + filename
+        return public_url
+    except Exception as e:
+        print(f"[WARNING] Failed to download image: {e}")
+        return None
+
+
+def _build_message_content(user_input: str, image_urls: list) -> list:
+    """构建OpenAI兼容的多模态消息content
+
+    如果有图片则返回多模态格式列表，否则返回纯文本字符串
+    """
+    if not image_urls:
+        return user_input
+
+    content = []
+    if user_input:
+        content.append({"type": "text", "text": user_input})
+    for url in image_urls:
+        content.append({"type": "image_url", "image_url": {"url": url}})
+    return content
 
 
 def _extract_user_id(message) -> str:
@@ -165,7 +207,7 @@ def _replace_domains(text: str) -> str:
     return text
 
 
-async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage, include_reasoning: bool = False, user_id: str = None, audit_output: bool = True):
+async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage, include_reasoning: bool = False, user_id: str = None, audit_output: bool = True, image_urls: list = None):
     """调用AI模型的通用函数"""
     try:
         # 获取模型配置
@@ -180,13 +222,16 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
         # 使用配置的API设置初始化客户端
         client = OpenAI(api_key=api_key, base_url=base_url)
 
+        # 构建消息内容（支持多模态）
+        message_content = _build_message_content(user_input, image_urls or [])
+
         # 调用大模型；仅当显式传入 user_id 时才包含 user 字段
         call_kwargs = {
             "model": model_name,
             "messages": [
                 {
                     "role": "user",
-                    "content": user_input,
+                    "content": message_content,
                 },
             ],
             "temperature": 1.0,
@@ -256,6 +301,27 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
         await message.reply(content=f"调用 {model_name} 模型时出错: {str(e)}")
 
 
+async def _extract_image_urls(message) -> list:
+    """从消息中提取图片附件，下载保存到本地，返回公开可访问的URL列表"""
+    image_urls = []
+    attachments = getattr(message, 'attachments', None)
+    if not attachments:
+        return image_urls
+
+    for attachment in attachments:
+        content_type = getattr(attachment, 'content_type', '') or ''
+        if not content_type.startswith('image/'):
+            continue
+        url = getattr(attachment, 'url', None)
+        if not url:
+            continue
+        public_url = await _download_and_save_image(url)
+        if public_url:
+            image_urls.append(public_url)
+
+    return image_urls
+
+
 async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     """群组调用 clawdbot 模型"""
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
@@ -265,10 +331,9 @@ async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
         await message.reply(content="🚫 对不起，我不能回答关于密码、秘钥或其他敏感信息的问题。请出于安全考虑避免询问此类内容。")
         return True
     
-    # NOTE: 将 AI 审查从输入改为输出，输出审查将在模型调用后进行
-    
     user_id = _extract_user_id(message)
-    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id)
+    image_urls = await _extract_image_urls(message)
+    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id, image_urls=image_urls)
     return True
 
 
@@ -276,14 +341,9 @@ async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     """私聊调用 clawdbot 模型"""
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
     
-    # # 检查敏感关键词
-    # if _check_sensitive_input(user_input):
-    #     await message.reply(content="🚫 对不起，我不能回答关于密码、秘钥或其他敏感信息的问题。请出于安全考虑避免询问此类内容。")
-    #     return True
-    
     user_id = _extract_user_id(message)
-    # 私聊暂时不审查模型输出，通过 audit_output 开关控制
-    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id, audit_output=False)
+    image_urls = await _extract_image_urls(message)
+    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id, audit_output=False, image_urls=image_urls)
     return True
 
 
@@ -293,13 +353,8 @@ async def chat_with_deepseek(api: BotAPI, message: GroupMessage, params=None):
     if params:
         user_input = "".join(params)
     else:
-        # 如果没有 params，尝试从 message.content 中提取
         user_input = message.content.strip() if hasattr(message, 'content') else "你好"
 
-    # NOTE: 安全检查暂时禁用，日后备用
-    # if _check_sensitive_input(user_input):
-    #     await message.reply(content="🚫 对不起，我不能回答关于密码、秘钥或其他敏感信息的问题。请出于安全考虑避免询问此类内容。")
-    #     return True
-
-    await _call_ai_model(ECUST_MODEL, user_input, message, include_reasoning=False)
+    image_urls = await _extract_image_urls(message)
+    await _call_ai_model(ECUST_MODEL, user_input, message, include_reasoning=False, image_urls=image_urls)
     return True
