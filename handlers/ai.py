@@ -4,7 +4,7 @@ from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload
-from config import MODEL_CONFIGS
+from config import MODEL_CONFIGS, ECUST_MODEL
 
 
 def _extract_user_id(message) -> str:
@@ -289,7 +289,7 @@ async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
 
 @Commands("/chat")
 async def chat_with_deepseek(api: BotAPI, message: GroupMessage, params=None):
-    """使用 MiniMax-M2.5 模型回复"""
+    """使用 /chat 命令调用模型回复"""
     if params:
         user_input = "".join(params)
     else:
@@ -301,5 +301,5 @@ async def chat_with_deepseek(api: BotAPI, message: GroupMessage, params=None):
     #     await message.reply(content="🚫 对不起，我不能回答关于密码、秘钥或其他敏感信息的问题。请出于安全考虑避免询问此类内容。")
     #     return True
 
-    await _call_ai_model("MiniMax-M2.5", user_input, message, include_reasoning=False)
+    await _call_ai_model(ECUST_MODEL, user_input, message, include_reasoning=False)
     return True
