@@ -239,7 +239,6 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
                     "content": message_content,
                 },
             ],
-            "temperature": 1.0,
         }
         if user_id:
             call_kwargs["user"] = user_id
