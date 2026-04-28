@@ -6,7 +6,7 @@ from openai import OpenAI
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
-from botpy.types.message import MarkdownPayload
+from botpy.types.message import MarkdownPayload, KeyboardPayload
 from config import MODEL_CONFIGS, ECUST_MODEL, IMAGE_SAVE_DIR, IMAGE_BASE_URL
 import r
 import config
@@ -392,13 +392,26 @@ async def switch_model(api: BotAPI, message: GroupMessage, params=None):
 
 @Commands("/models")
 async def list_models(api: BotAPI, message: GroupMessage, params=None):
-    """获取可用模型列表
+    """获取可用模型列表（支持分页和关键词过滤）
     
     用法:
-        /models          - 列出所有模型（最多显示30个）
-        /models <关键词>  - 按关键词过滤模型
+        /models              - 第1页，每页15个
+        /models 2            - 第2页
+        /models gpt          - 过滤包含 gpt 的模型（第1页）
+        /models 2 gpt        - 过滤包含 gpt 的模型（第2页）
     """
-    keyword = "".join(params).strip().lower() if params else ""
+    PAGE_SIZE = 15
+
+    # 解析参数：第一个纯数字视为页码，其余视为关键词
+    page = 1
+    keyword = ""
+    if params:
+        parts = "".join(params).strip().split()
+        if parts and parts[0].isdigit():
+            page = int(parts[0])
+            keyword = " ".join(parts[1:]).strip().lower()
+        else:
+            keyword = " ".join(parts).strip().lower()
 
     try:
         model_config = config.MODEL_CONFIGS.get(config.ECUST_MODEL, {})
@@ -411,7 +424,7 @@ async def list_models(api: BotAPI, message: GroupMessage, params=None):
 
         client = OpenAI(api_key=api_key, base_url=base_url)
         models_response = client.models.list()
-        all_models = [m.id for m in models_response.data]
+        all_models = sorted([m.id for m in models_response.data])
 
         # 关键词过滤
         if keyword:
@@ -424,31 +437,56 @@ async def list_models(api: BotAPI, message: GroupMessage, params=None):
             await message.reply(content=f"🔍 没有找到包含 \"{keyword}\" 的模型。")
             return True
 
-        # 截断显示，避免消息过长
-        MAX_SHOW = 30
-        display = filtered[:MAX_SHOW]
-        lines = [f"**{i+1}.** `{m}`" for i, m in enumerate(display)]
+        # 分页计算
+        total_pages = max(1, (total + PAGE_SIZE - 1) // PAGE_SIZE)
+        page = max(1, min(page, total_pages))
+        start = (page - 1) * PAGE_SIZE
+        end = min(start + PAGE_SIZE, total)
+        display = filtered[start:end]
 
+        # 构建列表行（全局序号）
+        lines = [f"**{start+i+1}.** `{m}`" for i, m in enumerate(display)]
+
+        # 标题
         header = f"## 📋 可用模型列表"
         if keyword:
             header += f" (过滤: \"{keyword}\")"
-        header += f"\n共 {total} 个模型"
+        header += f"\n共 {total} 个模型 | 第 {page}/{total_pages} 页"
 
-        if total > MAX_SHOW:
-            header += f"，显示前 {MAX_SHOW} 个"
-            lines.append(f"\n... 还有 {total - MAX_SHOW} 个模型未显示")
+        content = header + "\n\n" + "\n".join(lines)
 
         # 标记当前使用的模型
         current = config.ECUST_MODEL
-        content = header + "\n\n" + "\n".join(lines)
         if current in filtered:
             idx = filtered.index(current)
-            content += f"\n\n> ✅ 当前模型: `{current}` (第 {idx+1} 个)"
+            current_page = idx // PAGE_SIZE + 1
+            content += f"\n\n> ✅ 当前模型: `{current}` (第 {idx+1} 个，位于第 {current_page} 页)"
         else:
             content += f"\n\n> ✅ 当前模型: `{current}` (不在过滤结果中)"
 
+        # 构建翻页按钮
+        buttons = []
+        if page > 1:
+            prev_data = f"/models {page - 1}" + (f" {keyword}" if keyword else "")
+            buttons.append({
+                "id": "models_prev",
+                "render_data": {"label": "◀ 上一页", "visited_label": "◀ 上一页", "style": 1},
+                "action": {"type": 2, "permission": {"type": 2}, "data": prev_data, "reply": False, "enter": True, "unsupport_tips": "暂不支持"}
+            })
+        if page < total_pages:
+            next_data = f"/models {page + 1}" + (f" {keyword}" if keyword else "")
+            buttons.append({
+                "id": "models_next",
+                "render_data": {"label": "▶ 下一页", "visited_label": "▶ 下一页", "style": 1},
+                "action": {"type": 2, "permission": {"type": 2}, "data": next_data, "reply": False, "enter": True, "unsupport_tips": "暂不支持"}
+            })
+
         markdown = MarkdownPayload(content=content)
-        await message.reply(markdown=markdown, msg_type=2)
+        if buttons:
+            keyboard = KeyboardPayload(content={"rows": [{"buttons": buttons}]})
+            await message.reply(markdown=markdown, keyboard=keyboard, msg_type=2)
+        else:
+            await message.reply(markdown=markdown, msg_type=2)
 
     except Exception as e:
         await message.reply(content=f"❌ 获取模型列表失败: {str(e)}")
