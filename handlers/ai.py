@@ -8,6 +8,8 @@ from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload
 from config import MODEL_CONFIGS, ECUST_MODEL, IMAGE_SAVE_DIR, IMAGE_BASE_URL
+import r
+import config
 
 
 async def _download_and_save_image(image_url: str) -> str:
@@ -361,5 +363,29 @@ async def chat_with_deepseek(api: BotAPI, message: GroupMessage, params=None):
     image_urls = await _extract_image_urls(message)
     if not user_input and not image_urls:
         user_input = "你好"
-    await _call_ai_model(ECUST_MODEL, user_input, message, include_reasoning=False, image_urls=image_urls)
+    await _call_ai_model(config.ECUST_MODEL, user_input, message, include_reasoning=False, image_urls=image_urls)
+    return True
+
+
+@Commands("/model")
+async def switch_model(api: BotAPI, message: GroupMessage, params=None):
+    """切换AI模型"""
+    if not params:
+        await message.reply(content=f"当前模型: {config.ECUST_MODEL}\n\n用法: /model <模型名称>\n例: /model gemma-4-e2b-it")
+        return True
+
+    new_model = "".join(params).strip()
+    if not new_model:
+        await message.reply(content=f"当前模型: {config.ECUST_MODEL}\n\n用法: /model <模型名称>\n例: /model gemma-4-e2b-it")
+        return True
+
+    old_model = config.ECUST_MODEL
+
+    r.update_env_variable("ECUST_MODEL", new_model)
+    config.ECUST_MODEL = new_model
+
+    if old_model in config.MODEL_CONFIGS:
+        config.MODEL_CONFIGS[new_model] = config.MODEL_CONFIGS.pop(old_model)
+
+    await message.reply(content=f"✅ 模型已切换: {old_model} → {new_model}")
     return True
