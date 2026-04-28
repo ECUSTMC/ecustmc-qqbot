@@ -388,3 +388,69 @@ async def switch_model(api: BotAPI, message: GroupMessage, params=None):
 
     await message.reply(content=f"✅ 模型已切换: {old_model} → {new_model}")
     return True
+
+
+@Commands("/models")
+async def list_models(api: BotAPI, message: GroupMessage, params=None):
+    """获取可用模型列表
+    
+    用法:
+        /models          - 列出所有模型（最多显示30个）
+        /models <关键词>  - 按关键词过滤模型
+    """
+    keyword = "".join(params).strip().lower() if params else ""
+
+    try:
+        model_config = config.MODEL_CONFIGS.get(config.ECUST_MODEL, {})
+        api_key = model_config.get("api_key") or config.MODEL_CONFIGS.get("auto", {}).get("api_key")
+        base_url = model_config.get("base_url") or config.MODEL_CONFIGS.get("auto", {}).get("base_url")
+
+        if not api_key or not base_url:
+            await message.reply(content="❌ 未找到有效的API配置，无法获取模型列表。")
+            return True
+
+        client = OpenAI(api_key=api_key, base_url=base_url)
+        models_response = client.models.list()
+        all_models = [m.id for m in models_response.data]
+
+        # 关键词过滤
+        if keyword:
+            filtered = [m for m in all_models if keyword in m]
+        else:
+            filtered = all_models
+
+        total = len(filtered)
+        if total == 0:
+            await message.reply(content=f"🔍 没有找到包含 \"{keyword}\" 的模型。")
+            return True
+
+        # 截断显示，避免消息过长
+        MAX_SHOW = 30
+        display = filtered[:MAX_SHOW]
+        lines = [f"**{i+1}.** `{m}`" for i, m in enumerate(display)]
+
+        header = f"## 📋 可用模型列表"
+        if keyword:
+            header += f" (过滤: \"{keyword}\")"
+        header += f"\n共 {total} 个模型"
+
+        if total > MAX_SHOW:
+            header += f"，显示前 {MAX_SHOW} 个"
+            lines.append(f"\n... 还有 {total - MAX_SHOW} 个模型未显示")
+
+        # 标记当前使用的模型
+        current = config.ECUST_MODEL
+        content = header + "\n\n" + "\n".join(lines)
+        if current in filtered:
+            idx = filtered.index(current)
+            content += f"\n\n> ✅ 当前模型: `{current}` (第 {idx+1} 个)"
+        else:
+            content += f"\n\n> ✅ 当前模型: `{current}` (不在过滤结果中)"
+
+        markdown = MarkdownPayload(content=content)
+        await message.reply(markdown=markdown, msg_type=2)
+
+    except Exception as e:
+        await message.reply(content=f"❌ 获取模型列表失败: {str(e)}")
+
+    return True
