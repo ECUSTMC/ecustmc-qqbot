@@ -53,14 +53,6 @@ if mc_servers is None:
 
 mc_mcsrvstat_servers = os.getenv("MC_MCSRVSTAT_SERVERS", "")
 
-baidu_url = os.getenv("Baidu_URL")
-if baidu_url is None:
-    raise Exception('Missing "baidu_url" environment variable for your bot baidu_url')
-
-baidu_api_key = os.getenv("Baidu_API_Key")
-if baidu_api_key is None:
-    raise Exception('Missing "Baidu_API_Key" environment variable for your bot Baidu_API_Key')
-
 ecust_api_key = os.getenv("ECUST_API_Key")
 if ecust_api_key is None:
     raise Exception('Missing "ECUST_API_Key" environment variable for your bot ECUST_API_Key')

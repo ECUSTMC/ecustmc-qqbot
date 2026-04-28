@@ -9,7 +9,6 @@ SECRET = r.secret
 WEATHER_API_TOKEN = r.weather_api_token
 API_APP_ID = r.api_app_id
 API_APP_SECRET = r.api_app_secret
-BAIDU_API_KEY = r.baidu_api_key
 TJIT_KEY = r.tjit_key
 
 # 服务器配置

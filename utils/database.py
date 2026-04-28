@@ -3,12 +3,12 @@ import sqlite3
 from datetime import datetime
 import random
 import json
-import os
+import r
 
 
 def is_spring_festival() -> bool:
     """判断春节期间运势增强功能是否开启"""
-    return os.getenv("SPRING_FESTIVAL_ENABLED", "false").lower() == "true"
+    return r.spring_festival_enabled
 
 
 def init_user_numbers_db():
