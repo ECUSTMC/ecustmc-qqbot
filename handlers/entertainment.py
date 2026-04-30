@@ -5,12 +5,12 @@ import aiohttp
 import json
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
-from botpy.message import GroupMessage
+from botpy.message import GroupMessage, DirectMessage
 import config
 
 
 @Commands("vv")
-async def query_vv(api: BotAPI, message: GroupMessage, params=None):
+async def query_vv(api: BotAPI, message: GroupMessage | DirectMessage, params=None):
     # 如果没有提供查询参数，读取vv.txt文件获取表情名
     if not params:
         with open('vv.txt', 'r', encoding='utf-8') as file:
@@ -32,12 +32,22 @@ async def query_vv(api: BotAPI, message: GroupMessage, params=None):
                 emote_url = random.choice(result["data"])  # 从返回的列表中随机选择一个表情包文件名
                 emote_name = urllib.parse.unquote(emote_url.split('/')[-1].rstrip('.png'))  # 获取表情包文件名
 
-    # 上传表情包图片
-    uploadmedia = await api.post_group_file(
-        group_openid=message.group_openid,
-        file_type=1,
-        url=emote_url
-    )
+    # 判断是群聊还是私聊，使用对应的上传接口
+    if isinstance(message, DirectMessage):
+        # 私聊：使用 post_c2c_file
+        user_openid = message.author.user_openid
+        uploadmedia = await api.post_c2c_file(
+            openid=user_openid,
+            file_type=1,
+            url=emote_url
+        )
+    else:
+        # 群聊：使用 post_group_file
+        uploadmedia = await api.post_group_file(
+            group_openid=message.group_openid,
+            file_type=1,
+            url=emote_url
+        )
 
     # 构建回复内容
     reply_content = (
