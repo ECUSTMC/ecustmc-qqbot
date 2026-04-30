@@ -4,6 +4,7 @@ import re
 import uuid
 import aiohttp
 from openai import OpenAI
+import botpy
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
