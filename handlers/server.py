@@ -1,6 +1,7 @@
 """服务器状态查询处理器"""
 import time
 import aiohttp
+import botpy
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
