@@ -152,7 +152,7 @@ class EcustmcClient(botpy.Client):
         """处理消息按钮交互事件（INTERACTION_CREATE）"""
         try:
             interaction_id = interaction.id       # 交互ID，用于on_interaction_result
-            msg_event_id = interaction.event_id   # WebSocket事件ID，用于post_group_message的被动回复
+            msg_event_id = interaction.event_id   # WebSocket事件ID，用于post_group_message/post_c2c_message的被动回复
             button_data = interaction.data.resolved.button_data if interaction.data and interaction.data.resolved else None
             group_openid = interaction.group_openid
 
@@ -163,17 +163,28 @@ class EcustmcClient(botpy.Client):
             # 处理MC按钮回调
             if button_data in MC_BUTTON_ACTIONS:
                 mc_command = MC_BUTTON_ACTIONS[button_data]
-                reply_content = await execute_mc_command(self.api, mc_command, group_openid)
+                reply_content = await execute_mc_command(self.api, mc_command)
                 markdown = MarkdownPayload(content=reply_content)
                 # 先回应交互事件成功
                 await self.api.on_interaction_result(interaction_id=interaction_id, code=0)
-                # 用event_id发送被动回复消息，不算主动消息
-                await self.api.post_group_message(
-                    group_openid=group_openid,
-                    markdown=markdown,
-                    msg_type=2,
-                    event_id=msg_event_id
-                )
+                # 根据群聊/私聊选择对应的被动回复接口
+                if group_openid:
+                    # 群聊：用event_id发送被动回复消息，不算主动消息
+                    await self.api.post_group_message(
+                        group_openid=group_openid,
+                        markdown=markdown,
+                        msg_type=2,
+                        event_id=msg_event_id
+                    )
+                else:
+                    # 私聊：用event_id发送被动回复消息
+                    user_openid = interaction.user_openid
+                    await self.api.post_c2c_message(
+                        openid=user_openid,
+                        markdown=markdown,
+                        msg_type=2,
+                        event_id=msg_event_id
+                    )
             else:
                 # 未知按钮data，回应失败
                 await self.api.on_interaction_result(interaction_id=interaction_id, code=1)

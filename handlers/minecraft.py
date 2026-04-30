@@ -16,7 +16,7 @@ MC_BUTTON_ACTIONS = {
 }
 
 
-async def execute_mc_command(api: BotAPI, mc_command: str, group_openid: str = None):
+async def execute_mc_command(api: BotAPI, mc_command: str):
     """执行MC命令并返回Markdown格式的回复内容，出错返回None"""
     rcon_password = MC_RCON_PASSWORD
     rcon_host = MC_SERVER
