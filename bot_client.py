@@ -14,7 +14,7 @@ from handlers.daily import daily_word, daily_huangli, daily_notice
 from handlers.fortune import jrys, jrrp, query_tarot, query_divinatory_symbol
 from handlers.help import help, wiki
 from handlers.entertainment import query_vv, query_deltaforce_password
-from handlers.ai import chat_with_deepseek, switch_model, list_models, group_chat_with_clawdbot
+from handlers.ai import chat_with_deepseek, switch_model, list_models, direct_chat_with_clawdbot, group_chat_with_clawdbot
 from handlers.network_tools import query_ip_info, query_domain_info, ping_info
 from handlers.minecraft import query_mc_command, MC_BUTTON_ACTIONS, execute_mc_command
 from handlers.group_management import find_group, internal_find_group
@@ -81,7 +81,7 @@ class EcustmcClient(botpy.Client):
         
         if AI_DIRECT_ENABLED:
             try:
-                if await group_chat_with_clawdbot(api=self.api, message=message):
+                if await direct_chat_with_clawdbot(api=self.api, message=message):
                     return
             except Exception as e:
                 _log.error(f"私聊AI调用失败: {str(e)}")
