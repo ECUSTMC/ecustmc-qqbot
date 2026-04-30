@@ -14,7 +14,7 @@ from handlers.daily import daily_word, daily_huangli, daily_notice
 from handlers.fortune import jrys, jrrp, query_tarot, query_divinatory_symbol
 from handlers.help import help, wiki
 from handlers.entertainment import query_vv, query_deltaforce_password
-from handlers.ai import chat_with_deepseek, switch_model, list_models
+from handlers.ai import chat_with_deepseek, switch_model, list_models, group_chat_with_clawdbot
 from handlers.network_tools import query_ip_info, query_domain_info, ping_info
 from handlers.minecraft import query_mc_command, MC_BUTTON_ACTIONS, execute_mc_command
 from handlers.group_management import find_group, internal_find_group
@@ -74,14 +74,36 @@ class EcustmcClient(botpy.Client):
 
     async def on_c2c_message_create(self, message: DirectMessage):
         """私聊消息处理"""
+        # 私聊与群聊使用相同的处理器和AI逻辑
+        for handler in handlers:
+            if await handler(api=self.api, message=message):
+                return
+        
         if AI_DIRECT_ENABLED:
             try:
-                if await direct_chat_with_clawdbot(api=self.api, message=message):
+                if await group_chat_with_clawdbot(api=self.api, message=message):
                     return
             except Exception as e:
                 _log.error(f"私聊AI调用失败: {str(e)}")
-        content = message.content
-        await message.reply(content=content)
+                user_input = message.content.strip().replace("群", "")
+                if user_input:
+                    try:
+                        await internal_find_group(api=self.api, message=message, search_key=user_input)
+                        return
+                    except Exception as find_error:
+                        await message.reply(content=f"调用出错: {str(find_error)}")
+                else:
+                    await message.reply(content=f"调用出错: {str(e)}")
+        else:
+            user_input = message.content.strip().replace("群", "")
+            if user_input:
+                try:
+                    await internal_find_group(api=self.api, message=message, search_key=user_input)
+                    return
+                except Exception as e:
+                    await message.reply(content=f"调用出错: {str(e)}")
+            else:
+                await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_at_message_create(self, message: GroupMessage):
         """群组@消息处理"""

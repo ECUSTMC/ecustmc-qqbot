@@ -110,5 +110,9 @@ image_base_url = os.getenv("IMAGE_BASE_URL")
 if image_base_url is None:
     raise Exception('Missing "IMAGE_BASE_URL" environment variable for AI image base URL')
 
+# 飞书配置
+feishu_app_id = os.getenv("FEISHU_APP_ID")
+feishu_app_secret = os.getenv("FEISHU_APP_SECRET")
+
 # 春节期间运势增强功能开关
 spring_festival_enabled = os.getenv("SPRING_FESTIVAL_ENABLED", "false").lower() == "true"

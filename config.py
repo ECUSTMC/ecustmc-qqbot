@@ -19,8 +19,8 @@ MC_SERVER = r.mc_server
 MC_RCON_PORT = int(r.mc_rcon_port)
 
 # 飞书配置
-FEISHU_APP_ID = "cli_a8f1d48265fc500e"
-FEISHU_APP_SECRET = "u2NfRSgPlrI4KUhba3389eyj3LSa4aGR"
+FEISHU_APP_ID = r.feishu_app_id
+FEISHU_APP_SECRET = r.feishu_app_secret
 
 ECUST_MODEL = r.ecust_model
 

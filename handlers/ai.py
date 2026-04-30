@@ -1,5 +1,6 @@
 """AI相关处理器"""
 import os
+import re
 import uuid
 import aiohttp
 from openai import OpenAI
@@ -10,6 +11,59 @@ from botpy.types.message import MarkdownPayload, KeyboardPayload
 from config import MODEL_CONFIGS, ECUST_MODEL, IMAGE_SAVE_DIR, IMAGE_BASE_URL
 import r
 import config
+
+_log = botpy.logging.get_logger()
+
+# 预编译白名单URL匹配正则（模块级别，避免重复编译）
+_WHITELIST_PATTERNS = [
+    re.compile(rf'{re.escape(prefix)}[a-zA-Z0-9\-./?=&%]+')
+    for prefix in [
+        'https://mcskin.ecustvr.top/auth/',
+    ]
+]
+
+# 域名替换映射（按长度降序，避免短后缀先替换导致长后缀无法匹配）
+_DOMAIN_REPLACEMENTS = tuple(sorted(
+    {
+        '.com.cn': '-com-cn',
+        '.edu.cn': '-edu-cn',
+        '.gov.cn': '-gov-cn',
+        '.net.cn': '-net-cn',
+        '.org.cn': '-org-cn',
+        '.website': '-website',
+        '.online': '-online',
+        '.space': '-space',
+        '.mobi': '-mobi',
+        '.club': '-club',
+        '.store': '-store',
+        '.tech': '-tech',
+        '.info': '-info',
+        '.name': '-name',
+        '.live': '-live',
+        '.wiki': '-wiki',
+        '.ltd': '-ltd',
+        '.site': '-site',
+        '.cloud': '-cloud',
+        '.cn': '-cn',
+        '.com': '-com',
+        '.org': '-org',
+        '.net': '-net',
+        '.edu': '-edu',
+        '.gov': '-gov',
+        '.top': '-top',
+        '.cc': '-cc',
+        '.me': '-me',
+        '.tv': '-tv',
+        '.app': '-app',
+        '.ai': '-ai',
+        '.ink': '-ink',
+        '.md': '-md',
+        '.io': '-io',
+        '.py': '-py',
+    }.items(),
+    key=lambda x: len(x[0]),
+    reverse=True,
+))
 
 
 async def _download_and_save_image(image_url: str) -> str:
@@ -31,7 +85,7 @@ async def _download_and_save_image(image_url: str) -> str:
         public_url = IMAGE_BASE_URL.rstrip("/") + "/" + filename
         return public_url
     except Exception as e:
-        print(f"[WARNING] Failed to download image: {e}")
+        _log.warning(f"Failed to download image: {e}")
         return None
 
 
@@ -137,72 +191,23 @@ async def _ai_safety_check(text_to_check: str) -> bool:
             return False
 
     except Exception as e:
-        print(f"[WARNING] AI safety check error: {e}")
+        _log.warning(f"AI safety check error: {e}")
         return False
 
 
 def _replace_domains(text: str) -> str:
     """替换文本中的域名后缀以避免QQ API限制"""
-    # 定义白名单URL前缀（QQ白名单，不需要替换）
-    whitelist_prefixes = [
-        'https://mcskin.ecustvr.top/auth/',
-    ]
-    
-    # 定义要替换的域名后缀及其对应的替换字符串
-    domain_replacements = {
-        '.com.cn': '-com-cn',
-        '.edu.cn': '-edu-cn',
-        '.gov.cn': '-gov-cn',
-        '.net.cn': '-net-cn',
-        '.org.cn': '-org-cn',
-        '.cn': '-cn',
-        '.com': '-com',
-        '.org': '-org',
-        '.net': '-net',
-        '.edu': '-edu',
-        '.gov': '-gov',
-        '.top': '-top',
-        '.cc': '-cc',
-        '.me': '-me',
-        '.tv': '-tv',
-        '.info': '-info',
-        '.biz': '-biz',
-        '.name': '-name',
-        '.mobi': '-mobi',
-        '.club': '-club',
-        '.store': '-store',
-        '.app': '-app',
-        '.tech': '-tech',
-        '.ai': '-ai',
-        '.ink': '-ink',
-        '.live': '-live',
-        '.wiki': '-wiki',
-        '.ltd': '-ltd',
-        '.site': '-site',
-        '.online': '-online',
-        '.space': '-space',
-        '.website': '-website',
-        '.cloud': '-cloud',
-        '.md': '-md',
-        '.io': '-io',
-        '.py': '-py',
-        # 可以继续添加其他需要替换的域名后缀
-    }
-
-    # 先用占位符替换白名单URL，避免被替换
+    # 先用占位符替换白名单URL，避免被替换（使用模块级预编译正则）
     placeholders = {}
-    import re
-    for i, prefix in enumerate(whitelist_prefixes):
-        # 匹配以prefix开头的完整URL，只包含有效的URL字符
-        pattern = re.compile(rf'{re.escape(prefix)}[a-zA-Z0-9\-./?=&%]+')
+    for i, pattern in enumerate(_WHITELIST_PATTERNS):
         matches = pattern.findall(text)
         for j, match in enumerate(matches):
             placeholder = f"__WHITELIST_URL_{i}_{j}__"
             placeholders[placeholder] = match
             text = text.replace(match, placeholder)
     
-    # 进行替换
-    for old, new in domain_replacements.items():
+    # 进行替换（按长度降序，避免短后缀先替换导致长后缀无法匹配）
+    for old, new in _DOMAIN_REPLACEMENTS:
         text = text.replace(old, new)
     
     # 恢复白名单URL

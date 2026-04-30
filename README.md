@@ -9,7 +9,7 @@ ecustmc-qqbot/
 ├── main_new.py                  # 主入口
 ├── bot_client.py                # 机器人客户端主逻辑
 ├── config.py                    # 配置管理模块
-├── r.py                         # 敏感配置（不纳入版本控制）
+├── r.py                         # 环境变量配置（从 .env 读取）
 ├── utils/                       # 工具模块
 │   ├── database.py             # 数据库操作工具
 │   └── network.py              # 网络工具函数
@@ -50,7 +50,7 @@ ecustmc-qqbot/
    pip install -r requirements.txt
    ```
 
-2. 配置 `r.py`，填入以下必要配置项：
+2. 配置 `.env` 文件（参考 `r.py` 中的变量名），填入以下必要配置项：
    - `appid` / `secret`：QQ 机器人凭据
    - `weather_api_token`：高德天气 API Key
    - `api_app_id` / `api_app_secret`：黄历 API 凭据
@@ -91,7 +91,7 @@ python main_new.py
 
 ### config.py
 
-统一管理所有配置项，从 `r.py` 模块导入敏感配置，提供清晰的配置接口。
+统一管理所有配置项，从 `r.py` 模块导入配置，提供清晰的配置接口。
 
 ## 重构优势
 
@@ -103,6 +103,6 @@ python main_new.py
 
 ## 注意事项
 
-- `.env` 文件包含所有敏感配置（API Key、密码等），已加入 `.gitignore`，请勿提交到公开仓库
+- `.env` 文件包含所有 API Key 和凭据，已加入 `.gitignore`，请勿提交到公开仓库
 - 数据文件（如 `jrys.json`、`Tarots.json`、`bus_schedule_*.json` 等）需要保持最新
 - 依赖包版本见 `requirements.txt`

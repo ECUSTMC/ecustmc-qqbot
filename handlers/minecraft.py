@@ -1,11 +1,11 @@
 """Minecraft相关处理器"""
+import asyncio
 from mcrcon import MCRcon
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload, KeyboardPayload
 from config import MC_RCON_PASSWORD, MC_SERVER, MC_RCON_PORT
-import time
 
 
 # MC按钮回调data到命令的映射
@@ -26,7 +26,8 @@ async def execute_mc_command(api: BotAPI, mc_command: str, group_openid: str = N
         try:
             with MCRcon(rcon_host, rcon_password, port=rcon_port) as mcr:
                 mcr.command("player bot_sleep spawn at -3200 55 9370 facing -90 0 in minecraft:overworld")
-                time.sleep(1)
+            await asyncio.sleep(1)
+            with MCRcon(rcon_host, rcon_password, port=rcon_port) as mcr:
                 mcr.command("player bot_sleep use interval 20")
             return "## ☀️ 永昼机\n\n**永昼机已启动**"
         except Exception as e:

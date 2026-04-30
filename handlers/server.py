@@ -1,13 +1,14 @@
 """服务器状态查询处理器"""
 import time
 import aiohttp
-import requests
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload
 from config import MC_SERVERS, MC_MCSRVSTAT_SERVERS
 import r
+
+_log = botpy.logging.get_logger()
 
 
 @Commands("/服务器状态")
@@ -186,13 +187,15 @@ async def query_server_status(api: BotAPI, message: GroupMessage, params=None):
     api_url = "http://mcsm.ecustvr.top/"  # 替换为实际 API 地址
 
     try:
-        # 获取服务器状态数据
-        response = requests.get(api_url)
-        if response.status_code != 200:
-            await message.reply(content=f"无法获取服务器状态，状态码: {response.status_code}")
-            return
+        # 获取服务器状态数据（使用异步请求）
+        async with aiohttp.ClientSession() as session:
+            async with session.get(api_url) as resp:
+                if resp.status != 200:
+                    await message.reply(content=f"无法获取服务器状态，状态码: {resp.status}")
+                    return
 
-        data = response.json()
+                data = await resp.json()
+
         if data.get("status") != 200:
             await message.reply(content="服务器返回了非正常状态的数据")
             return
@@ -225,6 +228,6 @@ async def query_server_status(api: BotAPI, message: GroupMessage, params=None):
 
     except Exception as e:
         await message.reply(content=f"查询服务器状态时发生错误")
-        print(f"Error: {e}")
+        _log.error(f"查询服务器状态时发生错误: {e}")
 
     return True
