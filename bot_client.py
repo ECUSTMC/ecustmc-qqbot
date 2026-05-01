@@ -23,6 +23,7 @@ from handlers.bus import query_bus
 from handlers.classroom import query_empty_classroom
 
 from config import APPID, SECRET, AI_GROUP_ENABLED, AI_DIRECT_ENABLED
+import config
 
 _log = botpy.logging.get_logger()
 
@@ -188,6 +189,9 @@ class EcustmcClient(botpy.Client):
                         event_id=msg_event_id
                     )
             elif button_data and button_data.startswith("vote_"):
+                if not config.MCVOTE_API_URL or not config.MCVOTE_API_TOKEN:
+                    await self.api.on_interaction_result(interaction_id=interaction_id, code=1)
+                    return
                 voter_id = getattr(interaction, 'group_member_openid', None) or getattr(interaction, 'user_openid', None) or ''
                 reply_content = await handle_vote_interaction(self.api, button_data, voter_id)
                 if reply_content:

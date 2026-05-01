@@ -7,29 +7,42 @@ from botpy.message import GroupMessage, DirectMessage
 from botpy.types.message import MarkdownPayload, KeyboardPayload
 import config
 
+import botpy
+_log = botpy.logging.get_logger()
+
 VOTE_PAGE_SIZE = 4
 
 
 async def fetch_vote_list():
     url = f"{config.MCVOTE_API_URL}/api.php?action=list"
     headers = {"Authorization": f"Bearer {config.MCVOTE_API_TOKEN}"}
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers) as response:
-            if response.status == 200:
-                data = await response.json()
-                return data.get("packages", [])
-            return None
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data.get("packages", [])
+                _log.error(f"获取投票列表失败: status={response.status}")
+                return None
+    except Exception as e:
+        _log.error(f"获取投票列表异常: {str(e)}")
+        return None
 
 
 async def fetch_current_package():
     url = f"{config.MCVOTE_API_URL}/api.php?action=current"
     headers = {"Authorization": f"Bearer {config.MCVOTE_API_TOKEN}"}
-    async with aiohttp.ClientSession() as session:
-        async with session.get(url, headers=headers) as response:
-            if response.status == 200:
-                data = await response.json()
-                return data.get("current") or data
-            return None
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(url, headers=headers) as response:
+                if response.status == 200:
+                    data = await response.json()
+                    return data.get("current") or data
+                _log.error(f"获取当前整合包失败: status={response.status}")
+                return None
+    except Exception as e:
+        _log.error(f"获取当前整合包异常: {str(e)}")
+        return None
 
 
 async def submit_vote(package_id: int, vote_type: str, qq_id: str):
@@ -43,10 +56,14 @@ async def submit_vote(package_id: int, vote_type: str, qq_id: str):
         "vote_type": vote_type,
         "qq_id": qq_id
     }
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, json=payload) as response:
-            result = await response.json()
-            return result, response.status
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, json=payload) as response:
+                result = await response.json()
+                return result, response.status
+    except Exception as e:
+        _log.error(f"提交投票异常: {str(e)}")
+        return {"error": str(e)}, 500
 
 
 async def add_package(name: str, link: str):
@@ -56,9 +73,13 @@ async def add_package(name: str, link: str):
         "Content-Type": "application/json"
     }
     payload = {"name": name, "link": link}
-    async with aiohttp.ClientSession() as session:
-        async with session.post(url, headers=headers, json=payload) as response:
-            return await response.json(), response.status
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.post(url, headers=headers, json=payload) as response:
+                return await response.json(), response.status
+    except Exception as e:
+        _log.error(f"添加整合包异常: {str(e)}")
+        return {"error": str(e)}, 500
 
 
 def build_vote_keyboard(packages, page, total_pages):
