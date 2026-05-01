@@ -5,3 +5,4 @@ botpy.log*
 user_numbers.db
 __pycache__
 test.py
+api.md
