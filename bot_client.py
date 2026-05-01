@@ -17,6 +17,7 @@ from handlers.entertainment import query_vv, query_deltaforce_password
 from handlers.ai import chat_with_deepseek, switch_model, list_models, direct_chat_with_clawdbot, group_chat_with_clawdbot
 from handlers.network_tools import query_ip_info, query_domain_info, ping_info
 from handlers.minecraft import query_mc_command, MC_BUTTON_ACTIONS, execute_mc_command
+from handlers.vote import query_vote, handle_vote_interaction
 from handlers.group_management import find_group, internal_find_group
 from handlers.bus import query_bus
 from handlers.classroom import query_empty_classroom
@@ -61,7 +62,8 @@ handlers = [
     query_deltaforce_password,
     chat_with_deepseek,
     list_models,
-    switch_model
+    switch_model,
+    query_vote
 ]
 
 
@@ -185,6 +187,28 @@ class EcustmcClient(botpy.Client):
                         msg_type=2,
                         event_id=msg_event_id
                     )
+            elif button_data and button_data.startswith("vote_"):
+                user_openid = interaction.user_openid or ""
+                reply_content = await handle_vote_interaction(self.api, button_data, user_openid)
+                if reply_content:
+                    markdown = MarkdownPayload(content=reply_content)
+                    await self.api.on_interaction_result(interaction_id=interaction_id, code=0)
+                    if group_openid:
+                        await self.api.post_group_message(
+                            group_openid=group_openid,
+                            markdown=markdown,
+                            msg_type=2,
+                            event_id=msg_event_id
+                        )
+                    else:
+                        await self.api.post_c2c_message(
+                            openid=user_openid,
+                            markdown=markdown,
+                            msg_type=2,
+                            event_id=msg_event_id
+                        )
+                else:
+                    await self.api.on_interaction_result(interaction_id=interaction_id, code=1)
             else:
                 # 未知按钮data，回应失败
                 await self.api.on_interaction_result(interaction_id=interaction_id, code=1)

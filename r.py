@@ -116,3 +116,7 @@ feishu_app_secret = os.getenv("FEISHU_APP_SECRET")
 
 # 春节期间运势增强功能开关
 spring_festival_enabled = os.getenv("SPRING_FESTIVAL_ENABLED", "false").lower() == "true"
+
+# MC投票API配置
+mcvote_api_url = os.getenv("MCVOTE_API_URL")
+mcvote_api_token = os.getenv("MCVOTE_API_TOKEN")
