@@ -188,8 +188,8 @@ class EcustmcClient(botpy.Client):
                         event_id=msg_event_id
                     )
             elif button_data and button_data.startswith("vote_"):
-                user_openid = interaction.user_openid or ""
-                reply_content = await handle_vote_interaction(self.api, button_data, user_openid)
+                voter_id = getattr(interaction, 'group_member_openid', None) or getattr(interaction, 'user_openid', None) or ''
+                reply_content = await handle_vote_interaction(self.api, button_data, voter_id)
                 if reply_content:
                     markdown = MarkdownPayload(content=reply_content)
                     await self.api.on_interaction_result(interaction_id=interaction_id, code=0)
@@ -202,7 +202,7 @@ class EcustmcClient(botpy.Client):
                         )
                     else:
                         await self.api.post_c2c_message(
-                            openid=user_openid,
+                            openid=voter_id,
                             markdown=markdown,
                             msg_type=2,
                             event_id=msg_event_id
