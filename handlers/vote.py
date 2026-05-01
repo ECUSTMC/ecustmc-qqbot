@@ -128,7 +128,7 @@ async def query_vote(api: BotAPI, message, params=None):
             md_lines.append(f"提议：{proposer_name} | 👍{votes_up} 👎{votes_down}")
             if link:
                 safe_link = re.sub(r'^https?://', '', link)
-                safe_link = f"https://mcskin.ecustvr.top/auth/qqbot/qm/{safe_link}"
+                safe_link = f"https://mcskin.ecustvr.top/auth/qqbot/{safe_link}"
                 md_lines.append(f"[详情]({safe_link})")
             md_lines.append("")
 
