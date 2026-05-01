@@ -25,6 +25,7 @@ ecustmc-qqbot/
     ├── minecraft.py            # MC 服务器命令
     ├── network_tools.py        # IP 查询、ping、nslookup
     ├── server.py               # 服务器状态管理
+    ├── vote.py                 # 整合包投票
     └── weather.py              # 天气查询
 ```
 
@@ -38,6 +39,7 @@ ecustmc-qqbot/
 | 娱乐 | `/塔罗牌` `/求签` `vv` `/三角洲密码` | 娱乐功能 |
 | 网络工具 | `/ip` `/nslookup` `/ping` | 网络诊断 |
 | Minecraft | `/mc` | 服务器 RCON 命令 |
+| 投票 | `/vote` `/vote add` | 整合包投票列表、添加整合包 |
 | AI | `/ai` `/model` `/models` | AI 对话与模型管理 |
 | 校园 | `/校车` `/空教室` | 校车时刻表、空教室查询 |
 | 群组 | `/找群` | 搜索群组 |
@@ -56,6 +58,7 @@ ecustmc-qqbot/
    - `api_app_id` / `api_app_secret`：黄历 API 凭据
    - `mc_servers`：MC 服务器地址列表（逗号分隔）
    - `mc_server` / `mc_rcon_port` / `mc_rcon_password`：RCON 配置
+   - `mcvote_api_url` / `mcvote_api_token`：整合包投票 API 配置
    - `baidu_api_key`：AI 对话 API Key
    - 其他可选配置见 `config.py`
 
@@ -82,6 +85,7 @@ python main_new.py
 - **minecraft.py**：`/mc` MC 服务器 RCON 命令（支持交互式按钮）
 - **network_tools.py**：`/ip` `/nslookup` `/ping`
 - **server.py**：`/服务器状态` `/status` `/添加服务器` `/移除服务器`
+- **vote.py**：`/vote` 整合包投票列表（支持分页、按钮投票）、`/vote add` 添加整合包
 - **weather.py**：`/校园天气`
 
 ### utils/ 工具模块
