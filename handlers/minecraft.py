@@ -82,6 +82,20 @@ async def query_mc_command(api: BotAPI, message: GroupMessage, params=None):
                             "action": {"type": 1, "permission": {"type": 2}, "data": "mc_关闭永昼机", "unsupport_tips": "暂不支持"}
                         }
                     ]
+                },
+                {
+                    "buttons": [
+                        {
+                            "id": "vote_list",
+                            "render_data": {"label": "📋 投票列表", "visited_label": "📋 投票列表", "style": 1},
+                            "action": {"type": 1, "permission": {"type": 2}, "data": "vote_page_1", "unsupport_tips": "暂不支持"}
+                        },
+                        {
+                            "id": "vote_add",
+                            "render_data": {"label": "➕ 添加投票", "visited_label": "➕ 添加投票", "style": 1},
+                            "action": {"type": 2, "permission": {"type": 2}, "data": "/vote add ", "reply": False, "enter": False, "unsupport_tips": "暂不支持"}
+                        }
+                    ]
                 }
             ]
         })

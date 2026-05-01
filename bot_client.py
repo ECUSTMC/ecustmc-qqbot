@@ -5,7 +5,7 @@ import botpy
 from botpy import BotAPI
 from botpy.manage import GroupManageEvent
 from botpy.message import GroupMessage, DirectMessage
-from botpy.types.message import MarkdownPayload
+from botpy.types.message import MarkdownPayload, KeyboardPayload
 
 # 导入所有处理器
 from handlers.weather import query_weather
@@ -193,24 +193,22 @@ class EcustmcClient(botpy.Client):
                     await self.api.on_interaction_result(interaction_id=interaction_id, code=1)
                     return
                 voter_id = getattr(interaction, 'group_member_openid', None) or getattr(interaction, 'user_openid', None) or ''
-                reply_content = await handle_vote_interaction(self.api, button_data, voter_id)
-                if reply_content:
-                    markdown = MarkdownPayload(content=reply_content)
+                reply = await handle_vote_interaction(self.api, button_data, voter_id)
+                if reply:
                     await self.api.on_interaction_result(interaction_id=interaction_id, code=0)
-                    if group_openid:
-                        await self.api.post_group_message(
-                            group_openid=group_openid,
-                            markdown=markdown,
-                            msg_type=2,
-                            event_id=msg_event_id
-                        )
+                    if isinstance(reply, dict):
+                        md = MarkdownPayload(content=reply["markdown"])
+                        kb = reply.get("keyboard")
                     else:
-                        await self.api.post_c2c_message(
-                            openid=voter_id,
-                            markdown=markdown,
-                            msg_type=2,
-                            event_id=msg_event_id
-                        )
+                        md = MarkdownPayload(content=reply)
+                        kb = None
+                    send_kwargs = {"markdown": md, "msg_type": 2, "event_id": msg_event_id}
+                    if kb:
+                        send_kwargs["keyboard"] = KeyboardPayload(content={"rows": kb})
+                    if group_openid:
+                        await self.api.post_group_message(group_openid=group_openid, **send_kwargs)
+                    else:
+                        await self.api.post_c2c_message(openid=voter_id, **send_kwargs)
                 else:
                     await self.api.on_interaction_result(interaction_id=interaction_id, code=1)
             else:
