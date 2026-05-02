@@ -2,10 +2,9 @@
 import asyncio
 import aiohttp
 import botpy
-from botpy import BotAPI
 from botpy.manage import GroupManageEvent
 from botpy.message import GroupMessage, DirectMessage
-from botpy.types.message import MarkdownPayload, KeyboardPayload
+from botpy.types.message import MarkdownPayload
 
 # 导入所有处理器
 from handlers.weather import query_weather
