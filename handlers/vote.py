@@ -229,6 +229,20 @@ async def query_vote(api: BotAPI, message, params=None):
     return True
 
 
+def build_vote_result_keyboard():
+    return [
+        {
+            "buttons": [
+                {
+                    "id": "vote_rank",
+                    "render_data": {"label": "📊 查看当前排行", "visited_label": "📊 查看当前排行", "style": 1},
+                    "action": {"type": 1, "permission": {"type": 2}, "data": "vote_page_1", "unsupport_tips": "暂不支持"}
+                }
+            ]
+        }
+    ]
+
+
 async def handle_vote_interaction(api: BotAPI, button_data: str, voter_id: str):
     if button_data.startswith("vote_page_"):
         page = int(button_data[len("vote_page_"):])
@@ -244,22 +258,33 @@ async def handle_vote_interaction(api: BotAPI, button_data: str, voter_id: str):
         return None
 
     if not voter_id:
-        return {"content": "❌ 投票失败：无法获取用户身份信息，请稍后重试"}
+        return {"markdown": "## ❌ 投票失败\n\n无法获取用户身份信息，请稍后重试", "keyboard": build_vote_result_keyboard()}
+
+    packages = await fetch_vote_list()
+    if packages is not None:
+        package_exists = False
+        for pkg in packages:
+            if pkg["id"] == package_id:
+                package_exists = True
+                if pkg.get("is_current"):
+                    return {"markdown": "## ⚠️ 投票失败\n\n该整合包为当前服务器整合包，不接受投票", "keyboard": build_vote_result_keyboard()}
+        if not package_exists:
+            return {"markdown": "## ❌ 投票失败\n\n整合包不存在", "keyboard": build_vote_result_keyboard()}
 
     result, status_code = await submit_vote(package_id, vote_type, voter_id)
     if status_code == 200 and result.get("success"):
         action = "支持" if vote_type == "support" else "反对"
-        return {"content": f"🗳️ 投票成功！你已{action}该整合包"}
+        return {"markdown": f"## 🗳️ 投票成功\n\n你已**{action}**该整合包", "keyboard": build_vote_result_keyboard()}
     elif status_code == 409:
-        return {"content": "⚠️ 投票失败：你已经对此整合包投过票了"}
+        return {"markdown": "## ⚠️ 投票失败\n\n你已经对此整合包投过票了", "keyboard": build_vote_result_keyboard()}
     elif status_code == 400:
         error = result.get("error", "") if isinstance(result, dict) else ""
         if "qq_id" in error:
-            return {"content": "❌ 投票失败：无法获取用户身份信息，请稍后重试"}
-        return {"content": "❌ 投票失败：请求参数错误，请稍后重试"}
+            return {"markdown": "## ❌ 投票失败\n\n无法获取用户身份信息，请稍后重试", "keyboard": build_vote_result_keyboard()}
+        return {"markdown": "## ❌ 投票失败\n\n请求参数错误，请稍后重试", "keyboard": build_vote_result_keyboard()}
     else:
         _log.error(f"投票失败: status={status_code}, result={result}")
-        return {"content": "❌ 投票失败：服务器异常，请稍后再试"}
+        return {"markdown": "## ❌ 投票失败\n\n服务器异常，请稍后再试", "keyboard": build_vote_result_keyboard()}
 
 
 async def build_vote_page_reply(page=1):
