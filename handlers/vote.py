@@ -263,7 +263,8 @@ async def query_vote(api: BotAPI, message, params=None):
         votes_down = pkg.get("votes_down", 0)
         is_current = pkg.get("is_current", False)
         tag = " 🏆当前" if is_current else ""
-        md_lines.append(f"**{i}. {name}**{tag}")
+        pkg_id = pkg["id"]
+        md_lines.append(f"**{i}. {name} (id: {pkg_id})**{tag}")
         md_lines.append(f"提议者：{proposer_name} | 👍{votes_up} 👎{votes_down}")
         if link:
             safe_link = re.sub(r'^https?://', '', link)
