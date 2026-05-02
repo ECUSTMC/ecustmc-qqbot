@@ -59,11 +59,16 @@ async def submit_vote(package_id: int, vote_type: str, qq_id: str):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, headers=headers, json=payload) as response:
-                result = await response.json()
+                try:
+                    result = await response.json()
+                except Exception:
+                    text = await response.text()
+                    _log.error(f"提交投票响应解析失败: status={response.status}, body={text[:200]}")
+                    result = {}
                 return result, response.status
     except Exception as e:
         _log.error(f"提交投票异常: {str(e)}")
-        return {"error": str(e)}, 500
+        return {}, 500
 
 
 async def add_package(name: str, link: str):
@@ -76,10 +81,15 @@ async def add_package(name: str, link: str):
     try:
         async with aiohttp.ClientSession() as session:
             async with session.post(url, headers=headers, json=payload) as response:
-                return await response.json(), response.status
+                try:
+                    return await response.json(), response.status
+                except Exception:
+                    text = await response.text()
+                    _log.error(f"添加整合包响应解析失败: status={response.status}, body={text[:200]}")
+                    return {}, response.status
     except Exception as e:
         _log.error(f"添加整合包异常: {str(e)}")
-        return {"error": str(e)}, 500
+        return {}, 500
 
 
 def build_vote_keyboard(packages, page, total_pages):
@@ -166,9 +176,15 @@ async def query_vote(api: BotAPI, message, params=None):
             result, status_code = await add_package(name, link)
             if status_code == 200 and result.get("success"):
                 await message.reply(content=f"✅ 整合包「{name}」已添加成功！")
+            elif status_code == 400:
+                error = result.get("error", "") if isinstance(result, dict) else ""
+                if "name" in error or "link" in error:
+                    await message.reply(content="❌ 添加失败：名称或链接不能为空")
+                else:
+                    await message.reply(content="❌ 添加失败：请求参数错误")
             else:
-                error = result.get("error", "未知错误") if isinstance(result, dict) else "请求失败"
-                await message.reply(content=f"❌ 添加失败：{error}")
+                _log.error(f"添加整合包失败: status={status_code}, result={result}")
+                await message.reply(content="❌ 添加失败：服务器异常，请稍后再试")
             return True
         else:
             await message.reply(content="用法：\n/vote - 查看投票列表\n/vote <页码> - 翻页\n/vote add <名称> <链接> - 添加整合包")
@@ -236,9 +252,14 @@ async def handle_vote_interaction(api: BotAPI, button_data: str, voter_id: str):
         return {"markdown": f"## 🗳️ 投票成功\n\n你已**{action}**该整合包"}
     elif status_code == 409:
         return {"markdown": "## ⚠️ 投票失败\n\n你已经对此整合包投过票了"}
+    elif status_code == 400:
+        error = result.get("error", "") if isinstance(result, dict) else ""
+        if "qq_id" in error:
+            return {"markdown": "## ❌ 投票失败\n\n无法获取用户身份信息，请稍后重试"}
+        return {"markdown": "## ❌ 投票失败\n\n请求参数错误，请稍后重试"}
     else:
-        error = result.get("error", "未知错误") if isinstance(result, dict) else "请求失败"
-        return {"markdown": f"## ❌ 投票失败\n\n{error}"}
+        _log.error(f"投票失败: status={status_code}, result={result}")
+        return {"markdown": "## ❌ 投票失败\n\n服务器异常，请稍后再试"}
 
 
 async def build_vote_page_reply(page=1):
