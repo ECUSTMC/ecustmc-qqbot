@@ -197,18 +197,28 @@ class EcustmcClient(botpy.Client):
                 if reply:
                     await self.api.on_interaction_result(interaction_id=interaction_id, code=0)
                     if isinstance(reply, dict):
-                        md = MarkdownPayload(content=reply["markdown"])
-                        kb = reply.get("keyboard")
+                        if "content" in reply:
+                            send_kwargs = {"content": reply["content"], "msg_type": 0, "event_id": msg_event_id}
+                            if group_openid:
+                                await self.api.post_group_message(group_openid=group_openid, **send_kwargs)
+                            else:
+                                await self.api.post_c2c_message(openid=voter_id, **send_kwargs)
+                        else:
+                            md = MarkdownPayload(content=reply["markdown"])
+                            kb = reply.get("keyboard")
+                            send_kwargs = {"markdown": md, "msg_type": 2, "event_id": msg_event_id}
+                            if kb:
+                                send_kwargs["keyboard"] = KeyboardPayload(content={"rows": kb})
+                            if group_openid:
+                                await self.api.post_group_message(group_openid=group_openid, **send_kwargs)
+                            else:
+                                await self.api.post_c2c_message(openid=voter_id, **send_kwargs)
                     else:
-                        md = MarkdownPayload(content=reply)
-                        kb = None
-                    send_kwargs = {"markdown": md, "msg_type": 2, "event_id": msg_event_id}
-                    if kb:
-                        send_kwargs["keyboard"] = KeyboardPayload(content={"rows": kb})
-                    if group_openid:
-                        await self.api.post_group_message(group_openid=group_openid, **send_kwargs)
-                    else:
-                        await self.api.post_c2c_message(openid=voter_id, **send_kwargs)
+                        send_kwargs = {"content": reply, "msg_type": 0, "event_id": msg_event_id}
+                        if group_openid:
+                            await self.api.post_group_message(group_openid=group_openid, **send_kwargs)
+                        else:
+                            await self.api.post_c2c_message(openid=voter_id, **send_kwargs)
                 else:
                     await self.api.on_interaction_result(interaction_id=interaction_id, code=1)
             else:

@@ -244,22 +244,22 @@ async def handle_vote_interaction(api: BotAPI, button_data: str, voter_id: str):
         return None
 
     if not voter_id:
-        return {"markdown": "## ❌ 投票失败\n\n无法获取用户身份信息，请稍后重试"}
+        return {"content": "❌ 投票失败：无法获取用户身份信息，请稍后重试"}
 
     result, status_code = await submit_vote(package_id, vote_type, voter_id)
     if status_code == 200 and result.get("success"):
         action = "支持" if vote_type == "support" else "反对"
-        return {"markdown": f"## 🗳️ 投票成功\n\n你已**{action}**该整合包"}
+        return {"content": f"🗳️ 投票成功！你已{action}该整合包"}
     elif status_code == 409:
-        return {"markdown": "## ⚠️ 投票失败\n\n你已经对此整合包投过票了"}
+        return {"content": "⚠️ 投票失败：你已经对此整合包投过票了"}
     elif status_code == 400:
         error = result.get("error", "") if isinstance(result, dict) else ""
         if "qq_id" in error:
-            return {"markdown": "## ❌ 投票失败\n\n无法获取用户身份信息，请稍后重试"}
-        return {"markdown": "## ❌ 投票失败\n\n请求参数错误，请稍后重试"}
+            return {"content": "❌ 投票失败：无法获取用户身份信息，请稍后重试"}
+        return {"content": "❌ 投票失败：请求参数错误，请稍后重试"}
     else:
         _log.error(f"投票失败: status={status_code}, result={result}")
-        return {"markdown": "## ❌ 投票失败\n\n服务器异常，请稍后再试"}
+        return {"content": "❌ 投票失败：服务器异常，请稍后再试"}
 
 
 async def build_vote_page_reply(page=1):
