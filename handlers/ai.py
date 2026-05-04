@@ -1,15 +1,12 @@
 """AI相关处理器"""
-import os
 import re
-import uuid
-import aiohttp
 from openai import OpenAI
 import botpy
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload, KeyboardPayload
-from config import MODEL_CONFIGS, ECUST_MODEL, IMAGE_SAVE_DIR, IMAGE_BASE_URL
+from config import MODEL_CONFIGS, ECUST_MODEL
 import r
 import config
 
@@ -65,29 +62,6 @@ _DOMAIN_REPLACEMENTS = tuple(sorted(
     key=lambda x: len(x[0]),
     reverse=True,
 ))
-
-
-async def _download_and_save_image(image_url: str) -> str:
-    """下载图片并保存到本地目录，返回公开可访问的URL"""
-    try:
-        os.makedirs(IMAGE_SAVE_DIR, exist_ok=True)
-
-        ext = ".png"
-        filename = f"{uuid.uuid4().hex}{ext}"
-        save_path = os.path.join(IMAGE_SAVE_DIR, filename)
-
-        async with aiohttp.ClientSession() as session:
-            async with session.get(image_url) as resp:
-                if resp.status != 200:
-                    return None
-                with open(save_path, "wb") as f:
-                    f.write(await resp.read())
-
-        public_url = IMAGE_BASE_URL.rstrip("/") + "/" + filename
-        return public_url
-    except Exception as e:
-        _log.warning(f"Failed to download image: {e}")
-        return None
 
 
 def _build_message_content(user_input: str, image_urls: list) -> list:
@@ -311,8 +285,8 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
         await message.reply(content=f"调用 {model_name} 模型时出错: {str(e)}")
 
 
-async def _extract_image_urls(message) -> list:
-    """从消息中提取图片附件，下载保存到本地，返回公开可访问的URL列表"""
+def _extract_image_urls(message) -> list:
+    """从消息中提取图片附件URL列表"""
     image_urls = []
     attachments = getattr(message, 'attachments', None)
     if not attachments:
@@ -323,11 +297,9 @@ async def _extract_image_urls(message) -> list:
         if not content_type.startswith('image/'):
             continue
         url = getattr(attachment, 'url', None)
-        if not url:
-            continue
-        public_url = await _download_and_save_image(url)
-        if public_url:
-            image_urls.append(public_url)
+        if url:
+            print(f"[image_url] {url}")
+            image_urls.append(url)
 
     return image_urls
 
@@ -342,7 +314,7 @@ async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
         return True
     
     user_id = _extract_user_id(message)
-    image_urls = await _extract_image_urls(message)
+    image_urls = _extract_image_urls(message)
     await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id, image_urls=image_urls)
     return True
 
@@ -352,7 +324,7 @@ async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
     
     user_id = _extract_user_id(message)
-    image_urls = await _extract_image_urls(message)
+    image_urls = _extract_image_urls(message)
     await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id, audit_output=False, image_urls=image_urls)
     return True
 
@@ -365,7 +337,7 @@ async def chat_with_deepseek(api: BotAPI, message: GroupMessage, params=None):
     else:
         user_input = ""
 
-    image_urls = await _extract_image_urls(message)
+    image_urls = _extract_image_urls(message)
     if not user_input and not image_urls:
         user_input = "你好"
     await _call_ai_model(config.ECUST_MODEL, user_input, message, include_reasoning=False, image_urls=image_urls)
