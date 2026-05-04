@@ -48,10 +48,6 @@ CLASS_API_KEY = r.class_api_token
 AI_GROUP_ENABLED = r.ai_group_enabled
 AI_DIRECT_ENABLED = r.ai_direct_enabled
 
-# AI图片处理配置
-IMAGE_SAVE_DIR = r.image_save_dir
-IMAGE_BASE_URL = r.image_base_url
-
 # MC投票API配置
 MCVOTE_API_URL = r.mcvote_api_url
 MCVOTE_API_TOKEN = r.mcvote_api_token

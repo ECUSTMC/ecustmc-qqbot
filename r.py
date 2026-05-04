@@ -101,15 +101,6 @@ if class_api_token is None:
 ai_group_enabled = os.getenv("AI_GROUP_ENABLED", "false").lower() == "true"
 ai_direct_enabled = os.getenv("AI_DIRECT_ENABLED", "false").lower() == "true"
 
-# AI图片处理配置
-image_save_dir = os.getenv("IMAGE_SAVE_DIR")
-if image_save_dir is None:
-    raise Exception('Missing "IMAGE_SAVE_DIR" environment variable for AI image save directory')
-
-image_base_url = os.getenv("IMAGE_BASE_URL")
-if image_base_url is None:
-    raise Exception('Missing "IMAGE_BASE_URL" environment variable for AI image base URL')
-
 # 飞书配置
 feishu_app_id = os.getenv("FEISHU_APP_ID")
 feishu_app_secret = os.getenv("FEISHU_APP_SECRET")
