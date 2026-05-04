@@ -298,7 +298,6 @@ def _extract_image_urls(message) -> list:
             continue
         url = getattr(attachment, 'url', None)
         if url:
-            print(f"[image_url] {url}")
             image_urls.append(url)
 
     return image_urls
