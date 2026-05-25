@@ -5,6 +5,7 @@ import time
 from datetime import datetime
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
+from botpy.http import Route
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload
 from config import PEEK_IMAGE_URL, PEEK_NGINX_LOG
@@ -15,6 +16,20 @@ PEEK_WAIT_SECONDS = 8
 _NGINX_LOG_PATTERN = re.compile(
     r'^(\S+)\s+\S+\s+\S+\s+\[([^\]]+)\]\s+"GET\s+(\S+)\s+HTTP'
 )
+
+
+async def _recall_group_message(api: BotAPI, group_openid: str, message_id: str):
+    """撤回群消息"""
+    try:
+        route = Route(
+            "DELETE",
+            "/v2/groups/{group_openid}/messages/{message_id}",
+            group_openid=group_openid,
+            message_id=message_id,
+        )
+        await api._http.request(route)
+    except Exception:
+        pass  # 撤回失败不影响主流程
 
 
 @Commands("/窥屏")
@@ -37,7 +52,7 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
         f"⏳ 检测已启动，等待 {PEEK_WAIT_SECONDS} 秒后分析结果..."
     )
     markdown = MarkdownPayload(content=md_content)
-    await message.reply(markdown=markdown, msg_type=2)
+    first_msg = await message.reply(markdown=markdown, msg_type=2)
 
     # 等待客户端加载图片
     await asyncio.sleep(PEEK_WAIT_SECONDS)
@@ -48,9 +63,13 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
             lines = f.readlines()
     except FileNotFoundError:
         await message.reply(content=f"❌ 未找到 nginx 日志文件: {PEEK_NGINX_LOG}", msg_seq=2)
+        # 撤回第一条消息
+        await _recall_group_message(api, message.group_openid, first_msg.id)
         return True
     except Exception as e:
         await message.reply(content=f"❌ 读取 nginx 日志失败: {str(e)}", msg_seq=2)
+        # 撤回第一条消息
+        await _recall_group_message(api, message.group_openid, first_msg.id)
         return True
 
     # 解析日志，筛选访问追踪图片且在时间窗口内的条目
@@ -94,4 +113,8 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
 
     markdown = MarkdownPayload(content=result_md)
     await message.reply(markdown=markdown, msg_type=2, msg_seq=2)
+
+    # 撤回第一条包含追踪图片的消息
+    await _recall_group_message(api, message.group_openid, first_msg.id)
+
     return True
