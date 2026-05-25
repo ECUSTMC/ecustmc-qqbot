@@ -49,11 +49,14 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
     send_time_str = datetime.now().strftime("%H:%M:%S")
 
     # 发送包含追踪图片的 markdown 消息
-    # 添加时间戳参数避免浏览器缓存
-    image_url_with_ts = f"{PEEK_IMAGE_URL}?t={int(send_time)}"
+    # 使用随机路径避免客户端缓存（需配合 nginx 通配符配置）
+    image_base = image_path.rsplit('.', 1)[0]  # 如 /bear
+    image_ext = image_path.rsplit('.', 1)[1] if '.' in image_path else 'jpg'
+    random_path = f"{image_base}_{int(send_time * 1000)}.{image_ext}"
+    image_url_random = f"{PEEK_IMAGE_URL.rsplit('/', 1)[0]}{random_path}"
     md_content = (
         f"## 👁️ 窥屏检测\n\n"
-        f"![peek #640px #640px]({image_url_with_ts})\n\n"
+        f"![peek #640px #640px]({image_url_random})\n\n"
         f"⏳ 检测已启动，等待 {PEEK_WAIT_SECONDS} 秒后分析结果..."
     )
     markdown = MarkdownPayload(content=md_content)
@@ -82,6 +85,8 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
         return True
 
     # 解析日志，筛选访问追踪图片且在时间窗口内的条目
+    # 匹配格式：/bear_时间戳.jpg（随机路径避免缓存）
+    image_prefix = image_base + "_"  # 如 /bear_
     peek_ips = {}
     for line in lines:
         m = _NGINX_LOG_PATTERN.match(line)
@@ -89,8 +94,8 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
             continue
         ip, log_time_str, request_path = m.group(1), m.group(2), m.group(3)
 
-        # 检查是否访问了追踪图片路径
-        if not request_path.startswith(image_path):
+        # 检查是否访问了追踪图片路径（支持随机后缀）
+        if not (request_path.startswith(image_prefix) and request_path.endswith(f".{image_ext}")):
             continue
 
         # 解析日志时间：nginx 默认格式 "02/May/2026:13:45:22 +0800"
