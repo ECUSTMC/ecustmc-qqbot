@@ -7,13 +7,11 @@ from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload
+from config import PEEK_IMAGE_URL, PEEK_NGINX_LOG
 
-# 窥屏检测图片配置
-PEEK_IMAGE_URL = "https://qqbot.bestzyq.cn/bear.jpg"
-NGINX_LOG_PATH = "/www/wwwlogs/qqbot.bestzyq.cn.log"
 # 检测等待时间（秒），给客户端加载图片的时间
 PEEK_WAIT_SECONDS = 8
-# 日志时间解析格式（nginx 默认格式）
+# nginx 日志解析正则（combined 格式）
 _NGINX_LOG_PATTERN = re.compile(
     r'^(\S+)\s+\S+\s+\S+\s+\[([^\]]+)\]\s+"GET\s+(\S+)\s+HTTP'
 )
@@ -23,48 +21,39 @@ _NGINX_LOG_PATTERN = re.compile(
 async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
     """窥屏检测：发送一张会自动渲染的图片，然后分析 nginx 日志中访问该图片的 IP"""
 
-    # 生成唯一追踪参数，避免缓存影响
-    trace_id = f"peek_{int(time.time())}_{id(message)}"
-    tracked_url = f"{PEEK_IMAGE_URL}?t={trace_id}"
+    # 从配置 URL 提取图片路径（如 https://qqbot.bestzyq.cn/bear.jpg -> /bear.jpg）
+    from urllib.parse import urlparse
+    image_path = urlparse(PEEK_IMAGE_URL).path
 
     # 记录发送时间
     send_time = time.time()
     send_time_str = datetime.now().strftime("%H:%M:%S")
 
-    # 发送包含追踪图片的 markdown 消息（参考塔罗牌的图片格式：![name #宽 #高](url)）
+    # 发送包含追踪图片的 markdown 消息
+    # QQ Markdown 图片语法：![alt #宽px #高px](url)，不带查询参数
     md_content = (
         f"## 👁️ 窥屏检测\n\n"
-        f"![peek #640px #640px]({tracked_url})\n\n"
+        f"![peek #640px #640px]({PEEK_IMAGE_URL})\n\n"
         f"⏳ 检测已启动，等待 {PEEK_WAIT_SECONDS} 秒后分析结果..."
     )
     markdown = MarkdownPayload(content=md_content)
-    sent_msg = await message.reply(markdown=markdown, msg_type=2)
+    await message.reply(markdown=markdown, msg_type=2)
 
     # 等待客户端加载图片
     await asyncio.sleep(PEEK_WAIT_SECONDS)
 
-    # 撤回检测消息（隐藏撤回提示）
-    try:
-        if hasattr(message, 'group_openid') and message.group_openid:
-            # 群消息：通过 api 直接调用撤回接口
-            await api._http.request(
-                type(api._http).Route("DELETE", "/v2/groups/{group_openid}/messages/{message_id}", group_openid=message.group_openid, message_id=sent_msg.id),
-            )
-    except Exception:
-        pass  # 撤回失败不影响结果
-
     # 读取并分析 nginx 日志
     try:
-        with open(NGINX_LOG_PATH, "r", encoding="utf-8", errors="ignore") as f:
+        with open(PEEK_NGINX_LOG, "r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
     except FileNotFoundError:
-        await message.reply(content=f"❌ 未找到 nginx 日志文件: {NGINX_LOG_PATH}", msg_seq=2)
+        await message.reply(content=f"❌ 未找到 nginx 日志文件: {PEEK_NGINX_LOG}", msg_seq=2)
         return True
     except Exception as e:
         await message.reply(content=f"❌ 读取 nginx 日志失败: {str(e)}", msg_seq=2)
         return True
 
-    # 解析日志，筛选包含追踪参数的条目
+    # 解析日志，筛选访问追踪图片且在时间窗口内的条目
     peek_ips = {}
     for line in lines:
         m = _NGINX_LOG_PATTERN.match(line)
@@ -72,8 +61,8 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
             continue
         ip, log_time_str, request_path = m.group(1), m.group(2), m.group(3)
 
-        # 检查是否是本次追踪的请求
-        if trace_id not in request_path:
+        # 检查是否访问了追踪图片路径
+        if not request_path.startswith(image_path):
             continue
 
         # 解析日志时间：nginx 默认格式 "02/May/2026:13:45:22 +0800"
@@ -83,10 +72,10 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
         except (ValueError, IndexError):
             continue
 
-        # 只统计发送时间之后（允许 2 秒误差）的访问
-        if log_ts >= send_time - 2:
+        # 只统计发送时间前后窗口内的访问（前2秒到后PEEK_WAIT_SECONDS秒）
+        if send_time - 2 <= log_ts <= send_time + PEEK_WAIT_SECONDS + 2:
             if ip not in peek_ips:
-                peek_ips[ip] = log_time_str.split()[0]  # 只保留时间部分
+                peek_ips[ip] = log_time_str.split()[0]
 
     # 构建结果
     if not peek_ips:

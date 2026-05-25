@@ -111,3 +111,7 @@ spring_festival_enabled = os.getenv("SPRING_FESTIVAL_ENABLED", "false").lower() 
 # MC投票API配置
 mcvote_api_url = os.getenv("MCVOTE_API_URL")
 mcvote_api_token = os.getenv("MCVOTE_API_TOKEN")
+
+# 窥屏检测配置
+peek_image_url = os.getenv("PEEK_IMAGE_URL", "https://qqbot.bestzyq.cn/bear.jpg")
+peek_nginx_log = os.getenv("PEEK_NGINX_LOG", "/www/wwwlogs/qqbot.bestzyq.cn.log")

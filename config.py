@@ -51,3 +51,7 @@ AI_DIRECT_ENABLED = r.ai_direct_enabled
 # MC投票API配置
 MCVOTE_API_URL = r.mcvote_api_url
 MCVOTE_API_TOKEN = r.mcvote_api_token
+
+# 窥屏检测配置
+PEEK_IMAGE_URL = r.peek_image_url
+PEEK_NGINX_LOG = r.peek_nginx_log
