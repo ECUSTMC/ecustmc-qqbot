@@ -3,12 +3,15 @@ import asyncio
 import re
 import time
 from datetime import datetime
+import botpy
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.http import Route
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload
 from config import PEEK_IMAGE_URL, PEEK_NGINX_LOG
+
+_log = botpy.logging.get_logger()
 
 # 检测等待时间（秒），给客户端加载图片的时间
 PEEK_WAIT_SECONDS = 8
@@ -27,9 +30,10 @@ async def _recall_group_message(api: BotAPI, group_openid: str, message_id: str)
             group_openid=group_openid,
             message_id=message_id,
         )
-        await api._http.request(route)
-    except Exception:
-        pass  # 撤回失败不影响主流程
+        result = await api._http.request(route)
+        _log.info(f"撤回消息 {message_id} 结果: {result}")
+    except Exception as e:
+        _log.error(f"撤回消息 {message_id} 失败: {e}")
 
 
 @Commands("/窥屏")
@@ -53,6 +57,8 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
     )
     markdown = MarkdownPayload(content=md_content)
     first_msg = await message.reply(markdown=markdown, msg_type=2)
+    first_msg_id = first_msg.get("id") if isinstance(first_msg, dict) else getattr(first_msg, "id", None)
+    _log.info(f"窥屏检测首条消息ID: {first_msg_id}")
 
     # 等待客户端加载图片
     await asyncio.sleep(PEEK_WAIT_SECONDS)
@@ -64,12 +70,14 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
     except FileNotFoundError:
         await message.reply(content=f"❌ 未找到 nginx 日志文件: {PEEK_NGINX_LOG}", msg_seq=2)
         # 撤回第一条消息
-        await _recall_group_message(api, message.group_openid, first_msg.id)
+        if first_msg_id:
+            await _recall_group_message(api, message.group_openid, first_msg_id)
         return True
     except Exception as e:
         await message.reply(content=f"❌ 读取 nginx 日志失败: {str(e)}", msg_seq=2)
         # 撤回第一条消息
-        await _recall_group_message(api, message.group_openid, first_msg.id)
+        if first_msg_id:
+            await _recall_group_message(api, message.group_openid, first_msg_id)
         return True
 
     # 解析日志，筛选访问追踪图片且在时间窗口内的条目
@@ -115,6 +123,7 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
     await message.reply(markdown=markdown, msg_type=2, msg_seq=2)
 
     # 撤回第一条包含追踪图片的消息
-    await _recall_group_message(api, message.group_openid, first_msg.id)
+    if first_msg_id:
+        await _recall_group_message(api, message.group_openid, first_msg_id)
 
     return True
