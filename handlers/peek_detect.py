@@ -55,11 +55,11 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
     image_ext = image_path.rsplit('.', 1)[1] if '.' in image_path else 'jpg'
     random_path = f"{image_base}_{int(send_time * 1000)}.{image_ext}"
     image_url_random = f"{parsed_url.scheme}://{parsed_url.netloc}{random_path}"
-    # 尝试用 HTML <img> 标签替代 Markdown 图片语法，绕过腾讯 CDN 代理
+    # 同时保留 Markdown 图片语法和 HTML <img> 标签，测试哪种能绕过腾讯 CDN 代理
     md_content = (
         f"## 👁️ 窥屏检测\n\n"
-        f"![peek #640px #640px]({image_url_random})\n\n"
-        f'<img src="{image_url_random}" width="640" height="640"/>\n\n'
+        f"![peek]({image_url_random})\n\n"
+        f'<img src="{image_url_random}"/>\n\n'
         f"⏳ 检测已启动，等待 {PEEK_WAIT_SECONDS} 秒后分析结果..."
     )
     markdown = MarkdownPayload(content=md_content)
