@@ -20,6 +20,7 @@ from handlers.vote import query_vote
 from handlers.group_management import find_group, internal_find_group
 from handlers.bus import query_bus
 from handlers.classroom import query_empty_classroom
+from handlers.peek_detect import peek_detect
 
 from config import APPID, SECRET, AI_GROUP_ENABLED, AI_DIRECT_ENABLED
 import config
@@ -63,7 +64,8 @@ handlers = [
     chat_with_deepseek,
     list_models,
     switch_model,
-    query_vote
+    query_vote,
+    peek_detect
 ]
 
 
