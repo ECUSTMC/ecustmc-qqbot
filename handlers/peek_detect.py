@@ -19,7 +19,7 @@ _NGINX_LOG_PATTERN = re.compile(
 )
 
 
-@Commands("/窥屏检测")
+@Commands("/窥屏")
 async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
     """窥屏检测：发送一张会自动渲染的图片，然后分析 nginx 日志中访问该图片的 IP"""
 
@@ -31,23 +31,37 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
     send_time = time.time()
     send_time_str = datetime.now().strftime("%H:%M:%S")
 
-    # 发送包含图片的 markdown 消息
-    md_content = f"## 👁️ 窥屏检测\n\n![peek]({tracked_url})\n\n> 检测已启动，请稍候...\n\n⏳ 等待 {PEEK_WAIT_SECONDS} 秒后分析结果"
+    # 发送包含追踪图片的 markdown 消息（参考塔罗牌的图片格式：![name #宽 #高](url)）
+    md_content = (
+        f"## 👁️ 窥屏检测\n\n"
+        f"![peek #640px #640px]({tracked_url})\n\n"
+        f"⏳ 检测已启动，等待 {PEEK_WAIT_SECONDS} 秒后分析结果..."
+    )
     markdown = MarkdownPayload(content=md_content)
-    await message.reply(markdown=markdown, msg_type=2)
+    sent_msg = await message.reply(markdown=markdown, msg_type=2)
 
     # 等待客户端加载图片
     await asyncio.sleep(PEEK_WAIT_SECONDS)
+
+    # 撤回检测消息（隐藏撤回提示）
+    try:
+        if hasattr(message, 'group_openid') and message.group_openid:
+            # 群消息：通过 api 直接调用撤回接口
+            await api._http.request(
+                type(api._http).Route("DELETE", "/v2/groups/{group_openid}/messages/{message_id}", group_openid=message.group_openid, message_id=sent_msg.id),
+            )
+    except Exception:
+        pass  # 撤回失败不影响结果
 
     # 读取并分析 nginx 日志
     try:
         with open(NGINX_LOG_PATH, "r", encoding="utf-8", errors="ignore") as f:
             lines = f.readlines()
     except FileNotFoundError:
-        await message.reply(content=f"❌ 未找到 nginx 日志文件: {NGINX_LOG_PATH}")
+        await message.reply(content=f"❌ 未找到 nginx 日志文件: {NGINX_LOG_PATH}", msg_seq=2)
         return True
     except Exception as e:
-        await message.reply(content=f"❌ 读取 nginx 日志失败: {str(e)}")
+        await message.reply(content=f"❌ 读取 nginx 日志失败: {str(e)}", msg_seq=2)
         return True
 
     # 解析日志，筛选包含追踪参数的条目
@@ -90,5 +104,5 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
         )
 
     markdown = MarkdownPayload(content=result_md)
-    await message.reply(markdown=markdown, msg_type=2)
+    await message.reply(markdown=markdown, msg_type=2, msg_seq=2)
     return True
