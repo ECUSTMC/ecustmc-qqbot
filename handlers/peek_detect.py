@@ -50,10 +50,11 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
 
     # 发送包含追踪图片的 markdown 消息
     # 使用随机路径避免客户端缓存（需配合 nginx 通配符配置）
-    image_base = image_path.rsplit('.', 1)[0]  # 如 /bear
+    parsed_url = urlparse(PEEK_IMAGE_URL)
+    image_base = image_path.rsplit('.', 1)[0]  # 如 /image/bear
     image_ext = image_path.rsplit('.', 1)[1] if '.' in image_path else 'jpg'
     random_path = f"{image_base}_{int(send_time * 1000)}.{image_ext}"
-    image_url_random = f"{PEEK_IMAGE_URL.rsplit('/', 1)[0]}{random_path}"
+    image_url_random = f"{parsed_url.scheme}://{parsed_url.netloc}{random_path}"
     md_content = (
         f"## 👁️ 窥屏检测\n\n"
         f"![peek #640px #640px]({image_url_random})\n\n"
