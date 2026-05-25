@@ -49,10 +49,11 @@ async def peek_detect(api: BotAPI, message: GroupMessage, params=None):
     send_time_str = datetime.now().strftime("%H:%M:%S")
 
     # 发送包含追踪图片的 markdown 消息
-    # QQ Markdown 图片语法：![alt #宽px #高px](url)，不带查询参数
+    # 添加时间戳参数避免浏览器缓存
+    image_url_with_ts = f"{PEEK_IMAGE_URL}?t={int(send_time)}"
     md_content = (
         f"## 👁️ 窥屏检测\n\n"
-        f"![peek #640px #640px]({PEEK_IMAGE_URL})\n\n"
+        f"![peek #640px #640px]({image_url_with_ts})\n\n"
         f"⏳ 检测已启动，等待 {PEEK_WAIT_SECONDS} 秒后分析结果..."
     )
     markdown = MarkdownPayload(content=md_content)
