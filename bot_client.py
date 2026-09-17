@@ -22,6 +22,12 @@ from handlers.bus import query_bus
 from handlers.classroom import query_empty_classroom
 from handlers.peek_detect import peek_detect
 
+# 应用「群消息全量模式」SDK 补丁（必须在 Client 实例化之前导入）
+from utils.group_message_patch import apply_group_message_patch
+from utils.group_trigger import is_triggerable, deduper
+
+from handlers.authorize import authorize_group
+
 from config import APPID, SECRET, AI_GROUP_ENABLED, AI_DIRECT_ENABLED
 import config
 
@@ -65,7 +71,8 @@ handlers = [
     list_models,
     switch_model,
     query_vote,
-    peek_detect
+    peek_detect,
+    authorize_group
 ]
 
 
@@ -110,11 +117,47 @@ class EcustmcClient(botpy.Client):
                 await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_at_message_create(self, message: GroupMessage):
-        """群组@消息处理"""
+        """群组 @机器人 消息处理（保持原有行为）"""
+        return await self._handle_group(message, group_full_message=False)
+
+    async def on_group_message_create(self, message: GroupMessage):
+        """群消息「全量模式」处理
+
+        机器人被群主授权「接收所有消息」后，群里每条消息都会推送此事件。
+        与 @ 事件字段完全一致，因此复用同一个处理入口，
+        区别在于：必须是显式命令（/ 前缀）或白名单关键词才会响应，其余静默丢弃。
+        """
+        return await self._handle_group(message, group_full_message=True)
+
+    async def _handle_group(self, message: GroupMessage, group_full_message: bool = False):
+        """群聊消息统一处理入口
+
+        :param group_full_message: 是否来自全量模式事件（GROUP_MESSAGE_CREATE）
+        """
+        # 全量模式下先做触发判定，避免「群里聊到 vv」之类被误触发
+        if group_full_message and not is_triggerable(message, group_full_message=True):
+            _log.info(f"[全量消息] 非触发内容，静默忽略: {(message.content or '')[:40]}")
+            return
+
+        # 官方提示同一 msg_id 可能重复推送，按 msg_id 去重
+        if deduper.is_duplicate(getattr(message, "id", None)):
+            _log.info(f"[全量消息] 重复消息，已忽略 msg_id={getattr(message, 'id', None)}")
+            return
+
+        return await self._dispatch_group_handlers(message, group_full_message)
+
+    async def _dispatch_group_handlers(self, message: GroupMessage, group_full_message: bool = False):
+        """分发到各处理器；全量模式下禁用「兜底找群 / 兜底 AI」"""
         for handler in handlers:
             if await handler(api=self.api, message=message):
                 return
-        
+
+        # 全量模式下绝不走兜底逻辑：
+        # 否则群里每一句话都会被 internal_find_group / AI 扫一遍，既误报又限频
+        if group_full_message:
+            _log.info(f"[全量消息] 未命中指令，静默忽略: {(message.content or '')[:40]}")
+            return
+
         if AI_GROUP_ENABLED:
             try:
                 if await group_chat_with_clawdbot(api=self.api, message=message):
@@ -151,6 +194,38 @@ class EcustmcClient(botpy.Client):
     async def on_group_del_robot(self, event: GroupManageEvent):
         """机器人被移出群组事件"""
         _log.info(f"robot[{self.robot.name}] left group ${event.group_openid}")
+
+    async def on_group_msg_receive(self, event: GroupManageEvent):
+        """群管理员开启「接收所有消息」事件
+
+        收到后该群即开始推送 GROUP_MESSAGE_CREATE（全量消息）。
+        """
+        _log.info(f"[授权] 群 {event.group_openid} 已开启「接收所有消息」")
+        try:
+            await self.api.post_group_message(
+                group_openid=event.group_openid,
+                content=(
+                    "✅ 已开启「接收所有消息」授权\n"
+                    "现在机器人可以看到本群的全部消息了。\n\n"
+                    "为免打扰，机器人只在消息以 / 开头（或 @我）时才会响应哦～\n"
+                    "试试发送 /帮助 查看可用指令。"
+                ),
+                event_id=event.event_id,
+            )
+        except Exception as e:
+            _log.error(f"[授权] 群 {event.group_openid} 发送授权成功提示失败: {e}")
+
+    async def on_group_msg_reject(self, event: GroupManageEvent):
+        """群管理员关闭「接收所有消息」事件"""
+        _log.info(f"[授权] 群 {event.group_openid} 已关闭「接收所有消息」")
+        try:
+            await self.api.post_group_message(
+                group_openid=event.group_openid,
+                content="已关闭「接收所有消息」授权，机器人不会再看到未 @ 它的消息。",
+                event_id=event.event_id,
+            )
+        except Exception as e:
+            _log.error(f"[授权] 群 {event.group_openid} 发送授权关闭提示失败: {e}")
 
     async def on_interaction_create(self, interaction):
         """处理消息按钮交互事件（INTERACTION_CREATE）"""
@@ -206,6 +281,9 @@ async def main():
     global session
     session = aiohttp.ClientSession()
     
+    # 必须在 Client 实例化之前打补丁，否则 ConnectionState.parsers 已构建完毕
+    apply_group_message_patch()
+
     intents = botpy.Intents(
         direct_message=True,
         public_messages=True,
