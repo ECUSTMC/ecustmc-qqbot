@@ -15,7 +15,8 @@ async def help(api: BotAPI, message: GroupMessage, params=None):
         "通过这个站点，你可以自定义和上传你的皮肤，使用联合认证账号登录游戏，便可进入使用 Union 联合认证的其他高校的 Minecraft 服务器游玩，或登录到支持 Union OAuth 登录的网站。\n\n"
         "***\n\n"
         "- 🔗 [萌新指南](https://mc.ecustvr.top/tutorial)：游戏、启动器及账号配置\n"
-        "- 🔗 [QQBot帮助](https://mc.ecustvr.top/qqbot)：bot指令帮助\n\n"
+        "- 🔗 [QQBot帮助](https://mc.ecustvr.top/qqbot)：bot指令帮助\n"
+        "- 🔐 发送 /授权 ：查看「开启接收所有消息」的群主授权方法\n\n"
         "祝游戏愉快！"
     )
     

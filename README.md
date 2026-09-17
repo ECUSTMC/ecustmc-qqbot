@@ -12,7 +12,9 @@ ecustmc-qqbot/
 ├── r.py                         # 环境变量配置（从 .env 读取）
 ├── utils/                       # 工具模块
 │   ├── database.py             # 数据库操作工具
-│   └── network.py              # 网络工具函数
+│   ├── network.py              # 网络工具函数
+│   ├── group_message_patch.py  # 群消息「全量模式」SDK 补丁
+│   └── group_trigger.py        # 群聊触发判定与消息去重
 └── handlers/                    # 命令处理器模块
     ├── ai.py                   # AI 对话、模型切换
     ├── bus.py                  # 校车查询
@@ -26,6 +28,7 @@ ecustmc-qqbot/
     ├── network_tools.py        # IP 查询、ping、nslookup
     ├── server.py               # 服务器状态管理
     ├── vote.py                 # 整合包投票
+    ├── authorize.py            # 群主授权引导
     └── weather.py              # 天气查询
 ```
 
@@ -43,6 +46,7 @@ ecustmc-qqbot/
 | AI | `/ai` `/model` `/models` | AI 对话与模型管理 |
 | 校园 | `/校车` `/空教室` | 校车时刻表、空教室查询 |
 | 群组 | `/找群` | 搜索群组 |
+| 授权 | `/授权` | 查看「接收所有消息」群主授权指引 |
 | 帮助 | `/帮助` `/wiki` | 帮助信息 |
 
 ## 环境准备
@@ -110,3 +114,42 @@ python main_new.py
 - `.env` 文件包含所有 API Key 和凭据，已加入 `.gitignore`，请勿提交到公开仓库
 - 数据文件（如 `jrys.json`、`Tarots.json`、`bus_schedule_*.json` 等）需要保持最新
 - 依赖包版本见 `requirements.txt`
+
+
+## 群消息「全量模式」（接收所有消息）
+
+机器人默认只能收到 **@它** 的消息。QQ 开放平台支持在群内开启「接收所有消息」，
+开启后群里的每条消息都会通过 `GROUP_MESSAGE_CREATE` 事件推送。
+
+### 如何在群里触发授权
+
+群主 / 管理员无法通过指令直接授权（平台限制，必须手动点），流程是：
+
+1. 在群里 **@机器人** 并发送 `/授权`
+2. 机器人回复操作指引卡片
+3. 群主在 QQ 客户端 → 群设置 → **群机器人** → 本机器人资料页
+   打开「**接收所有消息**」并点击「同意」
+4. 平台回调 `GROUP_MSG_RECEIVE` 事件，机器人在群里回执 ✅
+
+授权 **按群独立**，每个群都要单独开一次。关掉时回调 `GROUP_MSG_REJECT`。
+
+> 找不到开关通常是平台还没对该机器人开放此能力（部分机器人需要企业主体认证）。
+
+### 实现要点
+
+`qq-botpy` 1.2.1 之后未再更新，不认识 `GROUP_MESSAGE_CREATE`，事件会被静默丢弃：
+
+- `utils/group_message_patch.py`：在 Client 实例化 **之前** 补齐 parser，
+  并增强 `GroupMessage` 字段解析（`member_role` / `message_type` /
+  `message_scene` / `msg_elements` / `ark_data`）。
+- `utils/group_trigger.py`：全量模式下只响应 `/` 前缀指令与白名单关键词，
+  其余静默丢弃，避免「群里聊到 vv」被误触发。
+
+### 行为约定
+
+| 事件 | 响应条件 |
+|------|----------|
+| `GROUP_AT_MESSAGE_CREATE`（@机器人） | 保持原有行为，未命中指令时走兜底 |
+| `GROUP_MESSAGE_CREATE`（全量） | **仅** `/` 前缀指令或 `vv`，其余静默；不走兜底（不扫群、不触发 AI） |
+
+另外全量消息按 `msg_id` 去重（官方提示同一 `msg_id` 可能重复推送）。
