@@ -14,6 +14,7 @@
 - describe_message(): 打印消息关键信息，便于排查「为什么没反应」
 """
 
+import re
 import time
 from collections import OrderedDict
 
@@ -30,10 +31,26 @@ _DEDUP_TTL = 300  # 秒
 # 是否把被忽略的全量消息也打成 WARNING（排查「@了没反应」时打开）
 FULL_MESSAGE_DEBUG = False
 
+# 全量模式（GROUP_MESSAGE_CREATE）下平台不会去掉「@机器人」前缀，
+# 而是原样下发形如 "<@93C3B65BF2EE20F5A11FFB14EC18EF85> /mc " 的内容，
+# 因此判定 / 分发前要先把开头的 @ 占位符剥掉。
+_MENTION_PLACEHOLDER_RE = re.compile(r"^(?:\s*<@!?[^>\s]+>)+\s*")
+
+
+def strip_leading_mentions(text: str) -> str:
+    """剥掉开头的 ``<@openid>`` 占位符与空白
+
+    例：``"<@93C3B65B...> /通知 "`` → ``"/通知 "``。
+    只处理开头连续的占位符，正文中 @ 别人不受影响。
+    """
+    if not text:
+        return text or ""
+    return _MENTION_PLACEHOLDER_RE.sub("", text)
+
 
 def _content_of(message) -> str:
     content = getattr(message, "content", None) or ""
-    return content.strip()
+    return strip_leading_mentions(content).strip()
 
 
 def is_command(content: str) -> bool:
@@ -63,48 +80,70 @@ def has_mentions(message) -> bool:
     return bool(_mention_ids(message))
 
 
-def mentions_bot(message, bot_id=None) -> bool:
+def mentions_a_bot(message) -> bool:
+    """mentions 里是否有 ``bot=true`` 的条目（即 @ 了某个机器人）"""
+    for user in getattr(message, "mentions", None) or []:
+        if getattr(user, "bot", None) is True:
+            return True
+    return False
+
+
+def mentions_bot(message, bot_ids=()) -> bool:
     """消息是否 @ 了机器人自己
 
-    全量模式（GROUP_MESSAGE_CREATE）下平台会把「@机器人」前缀从 content 里
-    去掉，所以只能靠 mentions 判断；拿不到机器人 id 时保守返回 False。
+    注意：群事件里被 @ 的用户用的是 openid，而 botpy 的 ``Client.robot.id``
+    是数字 appid（``robot.py: int(data["id"])``），两者对不上，
+    所以这里做两件事：
+
+    1. 命中调用方给出的候选 id（将来若能拿到机器人 openid 就能精确匹配）；
+    2. mentions 里出现 ``bot=true`` 的条目 —— 本群通常只有本机器人，
+       「@ 了某个机器人」基本等价于「@ 了我」。
     """
-    if not bot_id:
-        return False
-    return str(bot_id) in _mention_ids(message)
+    ids = _mention_ids(message)
+    for candidate in bot_ids or ():
+        if candidate is not None and str(candidate) in ids:
+            return True
+    return mentions_a_bot(message)
 
 
-def is_triggerable(message, group_full_message: bool = False, bot_id=None) -> bool:
+def is_triggerable(message, group_full_message: bool = False, bot_ids=()) -> bool:
     """判断群聊消息是否允许机器人响应
 
     - @机器人 事件（GROUP_AT_MESSAGE_CREATE）：保持原有行为，全部交给 handler
     - 全量消息（GROUP_MESSAGE_CREATE）：只响应
-      ① 命令前缀开头 ② 白名单关键词 ③ 明确 @ 了机器人的消息，其余静默丢弃
+      ① 命令前缀开头 ② 白名单关键词 ③ 明确 @ 了机器人 的消息，其余静默丢弃
+
+    content 开头形如 ``<@openid>`` 的 @ 占位符会先被剥掉，
+    因此「@ECUSTMC /通知」在全量模式下同样能命中 ``/`` 前缀规则。
     """
     if not group_full_message:
         return True
 
     content = _content_of(message)
     if not content:
-        # 图片 / 卡片 / 引用消息：全量模式下不主动响应，避免噪音
+        # 图片 / 卡片 / 纯 @ 无正文：全量模式下不主动响应，避免噪音
         return False
 
     if is_command(content) or is_bare_command(content):
         return True
 
-    # 「@机器人 你好」这种没有命令前缀的消息：content 里的 @ 已被平台去掉，
-    # 只能通过 mentions 里有没有机器人自己来判断
-    return mentions_bot(message, bot_id)
+    return mentions_bot(message, bot_ids)
 
 
 def describe_message(message) -> str:
     """给日志用的一句话描述（content 截断、mentions 只留前 8 位）"""
     content = (getattr(message, "content", None) or "").replace("\n", " ")
-    mentions = [mid[:8] for mid in _mention_ids(message)]
+    mentions = []
+    for user in getattr(message, "mentions", None) or []:
+        for attr in ("id", "member_openid", "union_openid"):
+            value = getattr(user, attr, None)
+            if value:
+                mentions.append(f"{str(value)[:8]}{'(bot)' if getattr(user, 'bot', None) is True else ''}")
+                break
     author = getattr(message, "author", None)
     author_id = getattr(author, "member_openid", None) or getattr(author, "id", None)
     return (
-        f"content={content[:40]!r} "
+        f"content={content[:60]!r} "
         f"type={getattr(message, 'message_type', None)} "
         f"author={str(author_id)[:8]} "
         f"mentions={mentions}"

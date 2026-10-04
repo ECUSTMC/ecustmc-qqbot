@@ -95,16 +95,23 @@ class EcustmcClient(botpy.Client):
 
     @staticmethod
     def _normalize_content(message):
-        """content 为空（图片/卡片消息）时补成空串
+        """规范化 content 后再分发给处理器
 
-        botpy 的 ``Commands`` 装饰器会做 ``command in message.content``，
-        content 为 None 会直接 TypeError 打断整条处理链。
+        - content 为 None（图片/卡片消息）时补成空串：botpy 的 ``Commands``
+          装饰器会做 ``command in message.content``，None 会直接 TypeError
+          打断整条处理链；
+        - 剥掉开头的 ``<@openid>`` 占位符：全量模式下平台不会去掉「@机器人」
+          前缀，原样下发 ``"<@93C3B65B...> /通知 "``，不剥掉的话
+          ``Commands["/通知"]`` 虽然仍能子串命中，但兜底找群的关键字、
+          AI 输入里都会混进这段占位符。
         """
-        if getattr(message, "content", None) is None:
-            try:
-                message.content = ""
-            except AttributeError:  # __slots__ 限制时忽略
-                pass
+        raw = getattr(message, "content", None)
+        if raw is None:
+            raw = ""
+        try:
+            message.content = group_trigger.strip_leading_mentions(raw)
+        except AttributeError:  # __slots__ 限制时忽略
+            pass
 
     async def on_c2c_message_create(self, message: DirectMessage):
         """私聊消息处理"""
@@ -161,22 +168,25 @@ class EcustmcClient(botpy.Client):
 
         :param group_full_message: 是否来自全量模式事件（GROUP_MESSAGE_CREATE）
         """
-        self._normalize_content(message)
+        # 不响应任何机器人（含自己）发的消息：全量模式下机器人自己的消息也会推送，
+        # 若其内容恰好以 / 开头（转述指令、回显等）就会形成自问自答的死循环
+        if getattr(getattr(message, "author", None), "bot", None) is True:
+            _log.debug(f"[群消息] 忽略机器人发的消息: {describe_message(message)}")
+            return
 
         # 全量模式下先做触发判定，避免「群里聊到 vv」之类被误触发。
         # 注意「判定」必须在「去重」之前：被丢弃的全量消息不能占用 msg_id，
         # 否则同一条消息紧接着以 @事件 到达时会被误判成重复消息直接丢掉，
         # 表现就是「群里 @机器人 反而没反应」。
+        # 另外这里用**原始 content** 判定/打日志（平台会下发 "@机器人 <@openid>"
+        # 前缀），剥离占位符放到分发之前做。
         if group_full_message and not is_triggerable(
-            message, group_full_message=True, bot_id=self.robot_id
+            message, group_full_message=True, bot_ids=(self.robot_id,)
         ):
-            # 平台会把「@机器人」前缀从 content 里去掉，所以 @ 了机器人
-            # 却带不出命令的消息只能靠 mentions 判断，这里把关键信息打出来，
-            # 方便排查「@了没反应」。
+            # 全量模式下平台**不会**去掉「@机器人」前缀，content 形如
+            # "<@93C3B65B...> /通知"，被忽略时打出来便于排查「@了没反应」
             if FULL_MESSAGE_DEBUG or group_trigger.has_mentions(message):
-                _log.warning(
-                    f"[全量消息] 已忽略（非指令 / 未@机器人）: {describe_message(message)}"
-                )
+                _log.warning(f"[全量消息] 已忽略（非指令 / 未@机器人）: {describe_message(message)}")
             else:
                 _log.debug(f"[全量消息] 非触发内容，静默忽略: {describe_message(message)}")
             return
@@ -186,6 +196,9 @@ class EcustmcClient(botpy.Client):
         if deduper.is_duplicate(getattr(message, "id", None)):
             _log.info(f"[全量消息] 重复消息，已忽略 msg_id={getattr(message, 'id', None)}")
             return
+
+        # 交给处理器之前再规范化 content（剥掉开头的 <@openid> 占位符）
+        self._normalize_content(message)
 
         return await self._dispatch_group_handlers(message, group_full_message)
 
@@ -341,7 +354,8 @@ async def main():
     # 以下 INFO 在 Client 实例化（log_level=30）之前打印，是启动时可见的
     group_trigger.FULL_MESSAGE_DEBUG = FULL_MESSAGE_DEBUG
     _log.info(
-        "群聊触发规则: 全量消息响应「/ 前缀指令」「白名单关键词 %s」「@机器人」；"
+        "群聊触发规则: 全量消息响应「指令前缀 / ／」「白名单关键词 %s」「@机器人」"
+        "（平台下发的 content 形如 '<@openid> /通知'，开头占位符会被自动剥离）；"
         "@事件 保持原有行为（未命中指令时走兜底）",
         "/".join(sorted(group_trigger.BARE_COMMANDS)) or "(无)",
     )

@@ -154,7 +154,7 @@ python main_new.py
 | 事件 | 响应条件 |
 |------|----------|
 | `GROUP_AT_MESSAGE_CREATE`（@机器人） | 保持原有行为，未命中指令时走兜底 |
-| `GROUP_MESSAGE_CREATE`（全量） | `/` 前缀指令、`vv`、或 `mentions` 里 @ 了机器人；其余静默；不走兜底（不扫群、不触发 AI） |
+| `GROUP_MESSAGE_CREATE`（全量） | 剥掉开头 `<@openid>` 后是 `/` 指令或 `vv`，或消息 @ 了机器人；其余静默；不走兜底（不扫群、不触发 AI） |
 
 全量消息按 `msg_id` 去重（官方提示同一 `msg_id` 可能重复推送）。
 **触发判定在去重之前**：被判定为「不响应」的全量消息不会占用 `msg_id`，
@@ -181,13 +181,32 @@ python main_new.py
 
 #### 「@机器人 没反应」
 
-全量模式（`GROUP_MESSAGE_CREATE`）下平台会把 `@机器人` 前缀从 `content`
-里去掉，没有命令前缀的消息只能靠 `mentions` 判断，因此：
+**关键坑**：全量模式（`GROUP_MESSAGE_CREATE`）下平台**不会**去掉「@机器人」前缀，
+而是原样下发形如 `<@93C3B65BF2EE20F5A11FFB14EC18EF85> /通知 ` 的内容
+（`content` 里带 `<@openid>` 占位符）。若只判断「是否以 `/` 开头」，
+`@ECUSTMC /通知` 就永远不匹配、被静默丢弃 —— 这就是「@了没反应」的根因。
 
-- 确认 `on_ready` 日志里的 `robot_id`，以及启动时打印的「群聊触发规则」；
-- 把 `.env` 里的 `FULL_MESSAGE_DEBUG` 设为 `true`（或临时调低 `log_level`），
-  被忽略的全量消息会以 WARNING 打印 `content / type / mentions`，
-  由此可确认平台下发的消息里 `mentions` 是否包含机器人自己。
+修复：`utils/group_trigger.py::strip_leading_mentions()` 会先剥掉开头的
+`<@openid>` 占位符再判定 / 再交给处理器（正文里 @ 别人不受影响）。
+
+@ 的识别还有一层坑：群事件里被 @ 的用户用 **openid**，而
+`botpy.Client.robot.id` 是**数字 appid**（`robot.py` 里 `int(data["id"])`），
+两者对不上，所以 `mentions` 与本机 id 无法直接比较。因此触发规则为：
+
+1. 剥掉占位符后以 `/`、`／` 开头；
+2. 剥掉占位符后命中白名单关键词（`vv`）；
+3. `mentions` 里出现 `bot=true` 的条目（@ 了机器人，本群通常只有本机器人）；
+4. `mentions` 命中调用方给出的候选 id（将来若能拿到机器人 openid 即可精确匹配）。
+
+其余（含图片/卡片、只 @ 人无正文）静默丢弃，机器人（含自己）发的消息一律不响应，
+避免全量模式下「机器人转述指令」形成自问自答的死循环。
+
+排查手段：
+
+- 启动日志会打印「群聊触发规则」和 `on_ready` 的 `robot_id`；
+- 把 `.env` 里的 `FULL_MESSAGE_DEBUG` 设为 `true`，被忽略的全量消息会打 WARNING，
+  格式为 `content=... type=... author=... mentions=['93C3B65B(bot)']`
+  —— 从 `(bot)` 标记就能看出平台有没有把机器人标成 `bot=true`。
 
 #### 离线自检
 

@@ -31,12 +31,28 @@ def make_api():
 
 
 class FakeMsg:
-    def __init__(self, msg_id="MSG_A", content="/帮助", mentions=(), api=None, group_openid="G1"):
+    def __init__(
+        self,
+        msg_id="MSG_A",
+        content="/帮助",
+        mentions=(),
+        api=None,
+        group_openid="G1",
+        author_bot=False,
+    ):
         self.id = msg_id
         self.content = content
-        self.mentions = [
-            SimpleNamespace(id=m, member_openid=m, union_openid=None) for m in mentions
-        ]
+        self.author = SimpleNamespace(
+            id="01A0B219AABBCC", member_openid="01A0B219AABBCC", bot=author_bot
+        )
+        self.mentions = []
+        for item in mentions:
+            mid, is_bot = item if isinstance(item, tuple) else (item, False)
+            self.mentions.append(
+                SimpleNamespace(
+                    id=mid, member_openid=mid, union_openid=None, bot=is_bot or None
+                )
+            )
         self.message_type = 0
         self.group_openid = group_openid
         self.api = api
@@ -47,8 +63,14 @@ class FakeMsg:
         )
 
 
-def fake_message(msg_id="MSG_A", content="/帮助", mentions=(), api=None):
-    return FakeMsg(msg_id=msg_id, content=content, mentions=mentions, api=api)
+def fake_message(msg_id="MSG_A", content="/帮助", mentions=(), api=None, author_bot=False):
+    return FakeMsg(
+        msg_id=msg_id,
+        content=content,
+        mentions=mentions,
+        api=api,
+        author_bot=author_bot,
+    )
 
 
 async def test_msg_seq_passive_increments():
@@ -107,29 +129,42 @@ async def test_c2c_msg_seq():
 
 def test_trigger():
     bot_id = "BOT_OPENID"
+    # 真实抓到的全量事件 content：平台**不会**去掉「@机器人」前缀
+    real = "<@93C3B65BF2EE20F5A11FFB14EC18EF85> /通知 "
     # @事件：永远放行
-    assert group_trigger.is_triggerable(fake_message(content="你好"), False, bot_id=bot_id)
-    # 全量：命令前缀
-    assert group_trigger.is_triggerable(fake_message(content="/帮助"), True, bot_id=bot_id)
-    # 全量：白名单关键词
-    assert group_trigger.is_triggerable(fake_message(content="vv"), True, bot_id=bot_id)
-    # 全量：普通聊天 -> 忽略
-    assert not group_trigger.is_triggerable(fake_message(content="今天天气不错"), True, bot_id=bot_id)
-    # 全量：@了机器人但没带命令前缀（content 里的 @ 已被平台去掉）-> 放行
+    assert group_trigger.is_triggerable(fake_message(content="你好"), False, bot_ids=(bot_id,))
+    # 全量：@机器人 + / 指令 -> 剥掉 <@...> 占位符后命中 / 前缀
     assert group_trigger.is_triggerable(
-        fake_message(content="你好", mentions=[bot_id]), True, bot_id=bot_id
+        fake_message(content=real, mentions=["93C3B65BF2EE20F5A11FFB14EC18EF85"]), True
+    )
+    assert group_trigger.strip_leading_mentions(real) == "/通知 "
+    # 全量：命令前缀
+    assert group_trigger.is_triggerable(fake_message(content="/帮助"), True)
+    # 全量：白名单关键词
+    assert group_trigger.is_triggerable(fake_message(content="vv"), True)
+    # 全量：普通聊天 -> 忽略
+    assert not group_trigger.is_triggerable(fake_message(content="今天天气不错"), True)
+    # 全量：@机器人 且 mentions 标了 bot=true（没带命令）-> 放行
+    assert group_trigger.is_triggerable(
+        fake_message(content="<@93C3B65B> 你好", mentions=[("93C3B65B", True)]), True
     )
     # 全量：@的是别人 -> 忽略
     assert not group_trigger.is_triggerable(
-        fake_message(content="你好", mentions=["SOMEONE_ELSE"]), True, bot_id=bot_id
+        fake_message(content="<@AAA> 你好", mentions=[("AAA", False)]), True
     )
-    # 全量：拿不到机器人 id 时保守忽略（不会误触发）
-    assert not group_trigger.is_triggerable(
-        fake_message(content="你好", mentions=[bot_id]), True, bot_id=None
+    # 全量：候选 id 精确命中（将来能拿到机器人 openid 时）
+    assert group_trigger.is_triggerable(
+        fake_message(content="<@BOT_OPENID> 你好", mentions=["BOT_OPENID"]),
+        True,
+        bot_ids=(bot_id,),
     )
     # 全量：图片/卡片（content 为空）-> 忽略
-    assert not group_trigger.is_triggerable(fake_message(content=None), True, bot_id=bot_id)
-    print("[OK] 全量消息触发判定：/ 前缀、vv、@机器人 放行，其余忽略")
+    assert not group_trigger.is_triggerable(fake_message(content=None), True)
+    # 全量：只 @ 了机器人、没有正文 -> 忽略
+    assert not group_trigger.is_triggerable(
+        fake_message(content="<@BOT_OPENID> ", mentions=["BOT_OPENID"]), True, bot_ids=(bot_id,)
+    )
+    print("[OK] 全量消息触发判定：@机器人+/ 指令、/、vv、@机器人 放行，其余忽略")
 
     # 去重：同一 msg_id 第二次为重复
     d = group_trigger.MessageDeduper()
@@ -284,6 +319,53 @@ async def test_full_mode_gate_does_not_eat_at_event():
     print("[OK] 重复推送仍按 msg_id 去重")
 
 
+async def test_at_command_in_full_mode():
+    """复现线上现象：全量模式下「@ECUSTMC /帮助」没反应
+
+    平台下发的 content 是 "<@93C3B65B...> /帮助 "（占位符不会被去掉），
+    修复后应能剥掉占位符、命中 / 前缀规则并正常回复一条。
+    """
+    import bot_client
+    from handlers.help import help as help_handler
+
+    client = bot_client.EcustmcClient.__new__(bot_client.EcustmcClient)
+    client.api = make_api()
+    client.robot_id = 123456789  # botpy 的 robot.id 是数字 appid，跟 openid 对不上
+
+    bot_client.handlers = [help_handler]
+
+    raw = "<@93C3B65BF2EE20F5A11FFB14EC18EF85> /帮助 "
+    msg = fake_message(
+        msg_id="ROBOT1.0_ATCMD",
+        content=raw,
+        mentions=["93C3B65BF2EE20F5A11FFB14EC18EF85"],
+        api=client.api,
+    )
+    await client._handle_group(msg, group_full_message=True)
+
+    payloads = client.api._http.payloads
+    assert len(payloads) == 1, payloads
+    assert payloads[0]["msg_id"] == "ROBOT1.0_ATCMD" and payloads[0]["msg_seq"] == 1, payloads[0]
+    assert msg.content == "/帮助 ", repr(msg.content)
+    print("[OK] 全量模式「@机器人 /帮助」-> 正常回复一条（占位符已剥离）")
+
+    # 同一条消息再推一次（平台可能重复推送）-> 被去重，不会重复回复
+    again = fake_message(
+        msg_id="ROBOT1.0_ATCMD", content=raw, mentions=["93C3B65BF2EE20F5A11FFB14EC18EF85"], api=client.api
+    )
+    await client._handle_group(again, group_full_message=True)
+    assert len(client.api._http.payloads) == 1, client.api._http.payloads
+    print("[OK] 重复推送被去重，只回复一次")
+
+    # 机器人自己（或别的机器人）发的消息一律不响应，避免自问自答成环
+    own = fake_message(
+        msg_id="ROBOT1.0_SELF", content="/帮助 ", api=client.api, author_bot=True
+    )
+    await client._handle_group(own, group_full_message=True)
+    assert len(client.api._http.payloads) == 1, client.api._http.payloads
+    print("[OK] 机器人自己发的消息被忽略（不会死循环）")
+
+
 async def main():
     apply_reply_seq_patch()
     await test_msg_seq_passive_increments()
@@ -293,6 +375,7 @@ async def main():
     await test_internal_find_group_single_reply()
     await test_dispatcher_no_duplicate_reply()
     await test_full_mode_gate_does_not_eat_at_event()
+    await test_at_command_in_full_mode()
     print("\n全部自检通过")
 
 
