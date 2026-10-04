@@ -55,3 +55,6 @@ MCVOTE_API_TOKEN = r.mcvote_api_token
 # 窥屏检测配置
 PEEK_IMAGE_URL = r.peek_image_url
 PEEK_NGINX_LOG = r.peek_nginx_log
+
+# 全量消息调试开关
+FULL_MESSAGE_DEBUG = r.full_message_debug

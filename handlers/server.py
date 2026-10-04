@@ -193,13 +193,14 @@ async def query_server_status(api: BotAPI, message: GroupMessage, params=None):
             async with session.get(api_url) as resp:
                 if resp.status != 200:
                     await message.reply(content=f"无法获取服务器状态，状态码: {resp.status}")
-                    return
+                    # 已回复过，必须返回 True，否则会继续走兜底重复回复同一 msg_id
+                    return True
 
                 data = await resp.json()
 
         if data.get("status") != 200:
             await message.reply(content="服务器返回了非正常状态的数据")
-            return
+            return True
 
         # 提取所需数据
         system_info = data["data"][0]["system"]

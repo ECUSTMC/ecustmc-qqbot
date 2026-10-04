@@ -115,3 +115,6 @@ mcvote_api_token = os.getenv("MCVOTE_API_TOKEN")
 # 窥屏检测配置
 peek_image_url = os.getenv("PEEK_IMAGE_URL", "https://qqbot.bestzyq.cn/bear.jpg")
 peek_nginx_log = os.getenv("PEEK_NGINX_LOG", "/www/wwwlogs/qqbot.bestzyq.cn.log")
+
+# 全量消息调试开关：开启后把每条被忽略的全量消息也打成 WARNING
+full_message_debug = os.getenv("FULL_MESSAGE_DEBUG", "false").lower() == "true"

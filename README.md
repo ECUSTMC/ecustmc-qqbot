@@ -8,11 +8,14 @@
 ecustmc-qqbot/
 ├── main_new.py                  # 主入口
 ├── bot_client.py                # 机器人客户端主逻辑
+├── selfcheck.py                 # 离线自检（msg_seq 去重 / 触发判定，无需联网）
 ├── config.py                    # 配置管理模块
 ├── r.py                         # 环境变量配置（从 .env 读取）
 ├── utils/                       # 工具模块
 │   ├── database.py             # 数据库操作工具
 │   ├── network.py              # 网络工具函数
+│   ├── reply.py                # safe_reply：兜底回复失败只记日志不抛异常
+│   ├── reply_seq.py            # 回复 msg_seq 自动递增补丁（40054005 去重）
 │   ├── group_message_patch.py  # 群消息「全量模式」SDK 补丁
 │   └── group_trigger.py        # 群聊触发判定与消息去重
 └── handlers/                    # 命令处理器模块
@@ -142,14 +145,55 @@ python main_new.py
 - `utils/group_message_patch.py`：在 Client 实例化 **之前** 补齐 parser，
   并增强 `GroupMessage` 字段解析（`member_role` / `message_type` /
   `message_scene` / `msg_elements` / `ark_data`）。
-- `utils/group_trigger.py`：全量模式下只响应 `/` 前缀指令与白名单关键词，
-  其余静默丢弃，避免「群里聊到 vv」被误触发。
+- `utils/group_trigger.py`：全量模式下只响应 `/` 前缀指令、白名单关键词与
+  **明确 @ 了机器人** 的消息，其余静默丢弃，避免「群里聊到 vv」被误触发。
+- `utils/reply_seq.py`：回复时自动递增 `msg_seq`（见下文「消息被去重」）。
 
 ### 行为约定
 
 | 事件 | 响应条件 |
 |------|----------|
 | `GROUP_AT_MESSAGE_CREATE`（@机器人） | 保持原有行为，未命中指令时走兜底 |
-| `GROUP_MESSAGE_CREATE`（全量） | **仅** `/` 前缀指令或 `vv`，其余静默；不走兜底（不扫群、不触发 AI） |
+| `GROUP_MESSAGE_CREATE`（全量） | `/` 前缀指令、`vv`、或 `mentions` 里 @ 了机器人；其余静默；不走兜底（不扫群、不触发 AI） |
 
-另外全量消息按 `msg_id` 去重（官方提示同一 `msg_id` 可能重复推送）。
+全量消息按 `msg_id` 去重（官方提示同一 `msg_id` 可能重复推送）。
+**触发判定在去重之前**：被判定为「不响应」的全量消息不会占用 `msg_id`，
+否则同一条消息随后再以 @事件 到达时会被误当成重复消息丢掉，
+表现就是「群里 @机器人 反而没反应」。
+
+### 排障
+
+#### 40054005「消息被去重，请检查请求msgseq」
+
+官方规则：**相同的 `msg_id + msg_seq` 重复发送会失败**，
+同一条消息要多次回复必须递增 `msg_seq`；主动消息重复 `msg_seq` 同样会被判重。
+而 `qq-botpy` 把 `msg_seq` 写死成默认值 `1`，所以只要一条消息回了两次
+（错误兜底、先发回执再撤回、多段消息…）就必然报这个错。
+
+修复：
+
+- `utils/reply_seq.py` 在 `BotAPI.post_group_message` / `post_c2c_message`
+  外层包了一层，按 `msg_id` / `event_id` / 会话自动分配递增序号，
+  调用方显式传的 `msg_seq`（如 `peek_detect` 的 `msg_seq=2`）依然生效。
+- 处理器若已经回复过用户，必须 `return True` 终止分发，不能返回 `False`/`None`，
+  否则会继续走兜底、用同一个 `msg_id` 再回一条。
+- 兜底回复统一走 `utils/reply.py::safe_reply`，失败只记日志，不再抛异常刷 traceback。
+
+#### 「@机器人 没反应」
+
+全量模式（`GROUP_MESSAGE_CREATE`）下平台会把 `@机器人` 前缀从 `content`
+里去掉，没有命令前缀的消息只能靠 `mentions` 判断，因此：
+
+- 确认 `on_ready` 日志里的 `robot_id`，以及启动时打印的「群聊触发规则」；
+- 把 `.env` 里的 `FULL_MESSAGE_DEBUG` 设为 `true`（或临时调低 `log_level`），
+  被忽略的全量消息会以 WARNING 打印 `content / type / mentions`，
+  由此可确认平台下发的消息里 `mentions` 是否包含机器人自己。
+
+#### 离线自检
+
+```bash
+python3 selfcheck.py
+```
+
+不需要网络与 QQ 凭据，覆盖：`msg_seq` 递增、全量消息触发判定、
+`msg_id` 去重、兜底回复不抛异常。

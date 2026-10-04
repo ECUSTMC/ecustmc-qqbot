@@ -24,11 +24,15 @@ from handlers.peek_detect import peek_detect
 
 # 应用「群消息全量模式」SDK 补丁（必须在 Client 实例化之前导入）
 from utils.group_message_patch import apply_group_message_patch
-from utils.group_trigger import is_triggerable, deduper
+# 应用「回复 msg_seq 自动递增」补丁，根治 40054005「消息被去重」
+from utils.reply_seq import apply_reply_seq_patch
+from utils.reply import safe_reply
+from utils import group_trigger
+from utils.group_trigger import is_triggerable, deduper, describe_message
 
 from handlers.authorize import authorize_group
 
-from config import APPID, SECRET, AI_GROUP_ENABLED, AI_DIRECT_ENABLED
+from config import APPID, SECRET, AI_GROUP_ENABLED, AI_DIRECT_ENABLED, FULL_MESSAGE_DEBUG
 import config
 
 _log = botpy.logging.get_logger()
@@ -78,18 +82,38 @@ handlers = [
 
 class EcustmcClient(botpy.Client):
     """ECUST Minecraft QQ机器人客户端"""
-    
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # 机器人自己的 openid：全量模式下判断消息里有没有 @ 机器人
+        self.robot_id = None
+
     async def on_ready(self):
         """机器人就绪事件"""
-        _log.info(f"robot[{self.robot.name}] is ready.")
+        self.robot_id = getattr(self.robot, "id", None)
+        _log.info(f"robot[{self.robot.name}] is ready. robot_id={self.robot_id}")
+
+    @staticmethod
+    def _normalize_content(message):
+        """content 为空（图片/卡片消息）时补成空串
+
+        botpy 的 ``Commands`` 装饰器会做 ``command in message.content``，
+        content 为 None 会直接 TypeError 打断整条处理链。
+        """
+        if getattr(message, "content", None) is None:
+            try:
+                message.content = ""
+            except AttributeError:  # __slots__ 限制时忽略
+                pass
 
     async def on_c2c_message_create(self, message: DirectMessage):
         """私聊消息处理"""
+        self._normalize_content(message)
         # 私聊与群聊使用相同的处理器和AI逻辑
         for handler in handlers:
             if await handler(api=self.api, message=message):
                 return
-        
+
         if AI_DIRECT_ENABLED:
             try:
                 if await direct_chat_with_clawdbot(api=self.api, message=message):
@@ -102,9 +126,10 @@ class EcustmcClient(botpy.Client):
                         await internal_find_group(api=self.api, message=message, search_key=user_input)
                         return
                     except Exception as find_error:
-                        await message.reply(content=f"调用出错: {str(find_error)}")
+                        _log.error(f"兜底找群失败: {str(find_error)}")
+                        await safe_reply(message, content=f"调用出错: {str(find_error)}")
                 else:
-                    await message.reply(content=f"调用出错: {str(e)}")
+                    await safe_reply(message, content=f"调用出错: {str(e)}")
         else:
             user_input = message.content.strip().replace("群", "")
             if user_input:
@@ -112,9 +137,10 @@ class EcustmcClient(botpy.Client):
                     await internal_find_group(api=self.api, message=message, search_key=user_input)
                     return
                 except Exception as e:
-                    await message.reply(content=f"调用出错: {str(e)}")
+                    _log.error(f"兜底找群失败: {str(e)}")
+                    await safe_reply(message, content=f"调用出错: {str(e)}")
             else:
-                await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
+                await safe_reply(message, content="不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_at_message_create(self, message: GroupMessage):
         """群组 @机器人 消息处理（保持原有行为）"""
@@ -125,7 +151,8 @@ class EcustmcClient(botpy.Client):
 
         机器人被群主授权「接收所有消息」后，群里每条消息都会推送此事件。
         与 @ 事件字段完全一致，因此复用同一个处理入口，
-        区别在于：必须是显式命令（/ 前缀）或白名单关键词才会响应，其余静默丢弃。
+        区别在于：必须是显式命令（/ 前缀）、白名单关键词或明确 @ 了机器人
+        的消息才会响应，其余静默丢弃。
         """
         return await self._handle_group(message, group_full_message=True)
 
@@ -134,12 +161,28 @@ class EcustmcClient(botpy.Client):
 
         :param group_full_message: 是否来自全量模式事件（GROUP_MESSAGE_CREATE）
         """
-        # 全量模式下先做触发判定，避免「群里聊到 vv」之类被误触发
-        if group_full_message and not is_triggerable(message, group_full_message=True):
-            _log.info(f"[全量消息] 非触发内容，静默忽略: {(message.content or '')[:40]}")
+        self._normalize_content(message)
+
+        # 全量模式下先做触发判定，避免「群里聊到 vv」之类被误触发。
+        # 注意「判定」必须在「去重」之前：被丢弃的全量消息不能占用 msg_id，
+        # 否则同一条消息紧接着以 @事件 到达时会被误判成重复消息直接丢掉，
+        # 表现就是「群里 @机器人 反而没反应」。
+        if group_full_message and not is_triggerable(
+            message, group_full_message=True, bot_id=self.robot_id
+        ):
+            # 平台会把「@机器人」前缀从 content 里去掉，所以 @ 了机器人
+            # 却带不出命令的消息只能靠 mentions 判断，这里把关键信息打出来，
+            # 方便排查「@了没反应」。
+            if FULL_MESSAGE_DEBUG or group_trigger.has_mentions(message):
+                _log.warning(
+                    f"[全量消息] 已忽略（非指令 / 未@机器人）: {describe_message(message)}"
+                )
+            else:
+                _log.debug(f"[全量消息] 非触发内容，静默忽略: {describe_message(message)}")
             return
 
-        # 官方提示同一 msg_id 可能重复推送，按 msg_id 去重
+        # 官方提示同一 msg_id 可能重复推送（同一消息也可能同时以
+        # GROUP_AT_MESSAGE_CREATE 与 GROUP_MESSAGE_CREATE 到达），按 msg_id 去重
         if deduper.is_duplicate(getattr(message, "id", None)):
             _log.info(f"[全量消息] 重复消息，已忽略 msg_id={getattr(message, 'id', None)}")
             return
@@ -155,9 +198,11 @@ class EcustmcClient(botpy.Client):
         # 全量模式下绝不走兜底逻辑：
         # 否则群里每一句话都会被 internal_find_group / AI 扫一遍，既误报又限频
         if group_full_message:
-            _log.info(f"[全量消息] 未命中指令，静默忽略: {(message.content or '')[:40]}")
+            _log.debug(f"[全量消息] 未命中指令，静默忽略: {describe_message(message)}")
             return
 
+        # 兜底回复一律走 safe_reply：即使平台报错（去重 / 限频 / 内容违规）
+        # 也只记日志，不再向上抛异常刷 traceback
         if AI_GROUP_ENABLED:
             try:
                 if await group_chat_with_clawdbot(api=self.api, message=message):
@@ -170,9 +215,10 @@ class EcustmcClient(botpy.Client):
                         await internal_find_group(api=self.api, message=message, search_key=user_input)
                         return
                     except Exception as find_error:
-                        await message.reply(content=f"调用出错: {str(find_error)}")
+                        _log.error(f"兜底找群失败: {str(find_error)}")
+                        await safe_reply(message, content=f"调用出错: {str(find_error)}")
                 else:
-                    await message.reply(content=f"调用出错: {str(e)}")
+                    await safe_reply(message, content=f"调用出错: {str(e)}")
         else:
             user_input = message.content.strip().replace("群", "")
             if user_input:
@@ -180,16 +226,22 @@ class EcustmcClient(botpy.Client):
                     await internal_find_group(api=self.api, message=message, search_key=user_input)
                     return
                 except Exception as e:
-                    await message.reply(content=f"调用出错: {str(e)}")
+                    _log.error(f"兜底找群失败: {str(e)}")
+                    await safe_reply(message, content=f"调用出错: {str(e)}")
             else:
-                await message.reply(content=f"不明白你在说什么哦(๑• . •๑)")
+                await safe_reply(message, content="不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_add_robot(self, message: GroupManageEvent):
         """机器人被添加到群组事件"""
-        await self.api.post_group_message(
-            group_openid=message.group_openid, 
-            content="欢迎使用ECUST-Minecraft QQ Bot服务"
-        )
+        try:
+            # GROUP_ADD_ROBOT 支持用 event_id 做被动回复（不占主动消息额度）
+            await self.api.post_group_message(
+                group_openid=message.group_openid,
+                content="欢迎使用ECUST-Minecraft QQ Bot服务",
+                event_id=getattr(message, "event_id", None),
+            )
+        except Exception as e:
+            _log.error(f"[入群] 群 {message.group_openid} 发送欢迎语失败: {e}")
 
     async def on_group_del_robot(self, event: GroupManageEvent):
         """机器人被移出群组事件"""
@@ -207,7 +259,7 @@ class EcustmcClient(botpy.Client):
                 content=(
                     "✅ 已开启「接收所有消息」授权\n"
                     "现在机器人可以看到本群的全部消息了。\n\n"
-                    "为免打扰，机器人只在消息以 / 开头（或 @我）时才会响应哦～\n"
+                    "为免打扰，机器人只在消息以 / 开头、或明确 @我 时才会响应哦～\n"
                     "试试发送 /帮助 查看可用指令。"
                 ),
                 event_id=event.event_id,
@@ -280,9 +332,21 @@ async def main():
     """主函数"""
     global session
     session = aiohttp.ClientSession()
-    
+
     # 必须在 Client 实例化之前打补丁，否则 ConnectionState.parsers 已构建完毕
     apply_group_message_patch()
+    # 回复 msg_seq 自动递增，避免 40054005「消息被去重」
+    apply_reply_seq_patch()
+
+    # 以下 INFO 在 Client 实例化（log_level=30）之前打印，是启动时可见的
+    group_trigger.FULL_MESSAGE_DEBUG = FULL_MESSAGE_DEBUG
+    _log.info(
+        "群聊触发规则: 全量消息响应「/ 前缀指令」「白名单关键词 %s」「@机器人」；"
+        "@事件 保持原有行为（未命中指令时走兜底）",
+        "/".join(sorted(group_trigger.BARE_COMMANDS)) or "(无)",
+    )
+    if FULL_MESSAGE_DEBUG:
+        _log.info("FULL_MESSAGE_DEBUG=true：被忽略的全量消息将以 WARNING 级别输出")
 
     intents = botpy.Intents(
         direct_message=True,
@@ -290,7 +354,7 @@ async def main():
         interaction=True
     )
     client = EcustmcClient(intents=intents, is_sandbox=False, log_level=30, timeout=60)
-    
+
     try:
         await client.start(appid=APPID, secret=SECRET)
     finally:

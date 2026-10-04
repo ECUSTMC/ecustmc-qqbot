@@ -8,8 +8,10 @@
 3. 被动回复有 5 分钟 / 每条消息 5 次的限制，滥回会被风控。
 
 本模块提供：
-- is_triggerable(): 判断消息是否允许机器人响应（命令前缀 / @机器人 / 开关）
+- is_triggerable(): 判断消息是否允许机器人响应
+  （命令前缀 / 白名单关键词 / 全量模式下 @了机器人）
 - MessageDeduper: 按 msg_id 去重（官方提示相同 msg_id 可能重复推送）
+- describe_message(): 打印消息关键信息，便于排查「为什么没反应」
 """
 
 import time
@@ -24,6 +26,9 @@ COMMAND_PREFIXES = ("/", "／")
 # 去重缓存容量与过期时间
 _DEDUP_MAX_SIZE = 4096
 _DEDUP_TTL = 300  # 秒
+
+# 是否把被忽略的全量消息也打成 WARNING（排查「@了没反应」时打开）
+FULL_MESSAGE_DEBUG = False
 
 
 def _content_of(message) -> str:
@@ -41,11 +46,40 @@ def is_bare_command(content: str) -> bool:
     return content.strip().lower() in BARE_COMMANDS
 
 
-def is_triggerable(message, group_full_message: bool = False) -> bool:
+def _mention_ids(message) -> list:
+    """取出消息里 @ 到的用户 id 列表"""
+    ids = []
+    for user in getattr(message, "mentions", None) or []:
+        for attr in ("id", "member_openid", "union_openid"):
+            value = getattr(user, attr, None)
+            if value:
+                ids.append(str(value))
+                break
+    return ids
+
+
+def has_mentions(message) -> bool:
+    """消息是否 @ 了任何人"""
+    return bool(_mention_ids(message))
+
+
+def mentions_bot(message, bot_id=None) -> bool:
+    """消息是否 @ 了机器人自己
+
+    全量模式（GROUP_MESSAGE_CREATE）下平台会把「@机器人」前缀从 content 里
+    去掉，所以只能靠 mentions 判断；拿不到机器人 id 时保守返回 False。
+    """
+    if not bot_id:
+        return False
+    return str(bot_id) in _mention_ids(message)
+
+
+def is_triggerable(message, group_full_message: bool = False, bot_id=None) -> bool:
     """判断群聊消息是否允许机器人响应
 
-    - @机器人 消息：保持原有行为（全部交给 handler 处理）
-    - 全量消息：只响应 ① 命令前缀开头 ② 白名单关键词，其余静默丢弃
+    - @机器人 事件（GROUP_AT_MESSAGE_CREATE）：保持原有行为，全部交给 handler
+    - 全量消息（GROUP_MESSAGE_CREATE）：只响应
+      ① 命令前缀开头 ② 白名单关键词 ③ 明确 @ 了机器人的消息，其余静默丢弃
     """
     if not group_full_message:
         return True
@@ -55,7 +89,26 @@ def is_triggerable(message, group_full_message: bool = False) -> bool:
         # 图片 / 卡片 / 引用消息：全量模式下不主动响应，避免噪音
         return False
 
-    return is_command(content) or is_bare_command(content)
+    if is_command(content) or is_bare_command(content):
+        return True
+
+    # 「@机器人 你好」这种没有命令前缀的消息：content 里的 @ 已被平台去掉，
+    # 只能通过 mentions 里有没有机器人自己来判断
+    return mentions_bot(message, bot_id)
+
+
+def describe_message(message) -> str:
+    """给日志用的一句话描述（content 截断、mentions 只留前 8 位）"""
+    content = (getattr(message, "content", None) or "").replace("\n", " ")
+    mentions = [mid[:8] for mid in _mention_ids(message)]
+    author = getattr(message, "author", None)
+    author_id = getattr(author, "member_openid", None) or getattr(author, "id", None)
+    return (
+        f"content={content[:40]!r} "
+        f"type={getattr(message, 'message_type', None)} "
+        f"author={str(author_id)[:8]} "
+        f"mentions={mentions}"
+    )
 
 
 class MessageDeduper:

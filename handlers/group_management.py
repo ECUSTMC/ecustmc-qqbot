@@ -1,12 +1,16 @@
 """群组管理相关处理器"""
 import re
 import aiohttp
+import botpy
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload
 from utils.network import get_tenant_access_token
+from utils.reply import safe_reply
 from config import FEISHU_APP_ID, FEISHU_APP_SECRET
+
+_log = botpy.logging.get_logger()
 
 
 async def fetch_groups_from_feishu(app_id: str, app_secret: str) -> list:
@@ -105,13 +109,25 @@ async def fetch_groups_from_feishu(app_id: str, app_secret: str) -> list:
 
 
 async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: str):
-    """内部群组查找函数"""
+    """内部群组查找函数
+
+    约定：**无论成功还是失败都只回复一次**，并且自身不抛异常。
+    之前这里回复失败后会再回一条错误消息，两条消息用的是同一个 msg_id +
+    msg_seq=1，第二条必定 40054005「消息被去重」，最后在 bot_client 里又回一次，
+    形成「3 条接口报错 + 一段 traceback」。
+    """
     try:
         groups = await fetch_groups_from_feishu(FEISHU_APP_ID, FEISHU_APP_SECRET)
-        if not groups:
-            await message.reply("获取群组信息失败，请稍后再试")
-            return
+    except Exception as e:
+        _log.error(f"获取群组信息出错: {e}")
+        groups = []
 
+    if not groups:
+        # 注意：message.reply 只接受关键字参数，之前写成位置参数会直接 TypeError
+        await safe_reply(message, content="获取群组信息失败，请稍后再试")
+        return
+
+    try:
         matched_groups = []
 
         # 针对QQ敏感词限制的处理
@@ -121,14 +137,14 @@ async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: st
             # 可以在这里添加更多敏感词映射
             # "敏感词（小写）": "替换词",
         }
-        
+
         # 检查并替换敏感词
         search_key_lower = search_key.lower()
         if search_key_lower in sensitive_words_map:
             search_key = sensitive_words_map[search_key_lower]
 
         for group in groups:
-            if (search_key.replace(" ", "").lower() in group["group_name"].replace(" ", "").lower() or 
+            if (search_key.replace(" ", "").lower() in group["group_name"].replace(" ", "").lower() or
                 search_key.replace(" ", "").lower() in group["description"].replace(" ", "").lower() or
                 search_key.replace(" ", "") == group["group_id"]):
                 matched_groups.append(group)
@@ -151,13 +167,14 @@ async def internal_find_group(api: BotAPI, message: GroupMessage, search_key: st
                 reply += "***\n\n"
             if len(matched_groups) > 10:
                 reply += f"📢 还有 **{len(matched_groups)-10}** 个结果未显示..."
-        
+
         reply += "\n\n👉 有想添加的群聊？立即[填写表单](https://mcskin.ecustvr.top/auth/qqtj)"
         markdown = MarkdownPayload(content=reply)
-        await message.reply(markdown=markdown, msg_type=2)
-
     except Exception as e:
-        await message.reply(content=f"❌ 查询群组信息时发生错误: {str(e)}")
+        await safe_reply(message, content=f"❌ 查询群组信息时发生错误: {str(e)}")
+        return
+
+    await safe_reply(message, markdown=markdown, msg_type=2)
 
 
 @Commands("/找群")

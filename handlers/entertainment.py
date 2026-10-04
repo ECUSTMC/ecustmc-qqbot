@@ -76,13 +76,15 @@ async def query_deltaforce_password(api: BotAPI, message: GroupMessage, params=N
             async with session.get(api_url) as response:
                 if response.status != 200:
                     await message.reply(content="三角洲行动API请求失败，请稍后再试")
-                    return False
+                    # 已经回复过用户，必须返回 True 终止分发；
+                    # 返回 False 会继续走兜底，用同一个 msg_id 再回一条 → 40054005
+                    return True
                 
                 result = await response.json()
                 
                 if result["code"] != 200:
                     await message.reply(content=f"三角洲行动API返回错误: {result['msg']}")
-                    return False
+                    return True
                 
                 # 构建回复内容
                 reply_content = "🔍 三角洲行动密码查询结果\n\n"
@@ -110,4 +112,4 @@ async def query_deltaforce_password(api: BotAPI, message: GroupMessage, params=N
                 
     except Exception as e:
         await message.reply(content=f"查询三角洲行动密码时发生错误: {str(e)}")
-        return False
+        return True
