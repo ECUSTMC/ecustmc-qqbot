@@ -1135,8 +1135,8 @@ def test_lexiang_answer_cleaning():
     print("[OK] 乐享响应信封 / 答案清洗与配图抽取 / 引用解析 / targets 解析 / 回复模板")
 
 
-async def test_full_mode_only_explicit_group_search():
-    """全量消息模式只做零成本响应：明确找群句式才搜群，绝不调用知识库/大模型"""
+async def test_full_mode_routing():
+    """全量消息模式：@了机器人走完整兜底，明确找群只搜群，其余闲聊静默"""
     import bot_client
     from handlers import kb_qa
     from handlers import group_management as gm
@@ -1163,7 +1163,7 @@ async def test_full_mode_only_explicit_group_search():
 
     async def fake_decide(user_input, group_result):
         decided.append(user_input)
-        return {"send_group": False, "query_kb": True, "reason": "不该被调用", "source": "ai"}
+        return {"send_group": False, "query_kb": True, "reason": "校园问题", "source": "ai"}
 
     originals = (bot_client.handlers, kb_qa.ask_knowledge_base,
                  kb_qa.router.decide, kb_qa.CAMPUS_QA_ENABLED, gm.search_groups)
@@ -1173,38 +1173,79 @@ async def test_full_mode_only_explicit_group_search():
     kb_qa.CAMPUS_QA_ENABLED = True
     gm.search_groups = fake_search
     try:
-        # 普通群聊（没 @ 机器人、也不是找群）→ 静默
+        # ① 普通群聊（没 @ 机器人、也不是找群）→ 静默
         plain = fake_message(msg_id="FULL_PLAIN", content="今天天气不错", api=client.api)
         await client._handle_group(plain, group_full_message=True)
         assert searched == [] and asked == [] and decided == [], (searched, asked, decided)
         assert client.api._http.payloads == []
+        print("[OK] 全量模式：普通闲聊完全静默（不搜群、不调模型/知识库）")
 
-        # @机器人 + 校园问题 → 全量模式下也静默（不能调知识库，账单会爆炸）
+        # ② @了机器人 + 校园问题 → 和 @事件 一样走完整兜底（找群 → 路由 → 查知识库）
         at = fake_message(
             msg_id="FULL_AT", content="<@BOT_OPENID> 宿舍几点熄灯 ",
             mentions=[("BOT_OPENID", True)], api=client.api,
         )
         await client._handle_group(at, group_full_message=True)
-        assert asked == [] and decided == [], (asked, decided)
-        assert client.api._http.payloads == [], client.api._http.payloads
-        print("[OK] 全量模式：普通聊天与「@机器人 提问」都不触发知识库/大模型（省钱）")
+        # 群表搜索用的是剥掉疑问词后的关键词（"宿舍几点熄灯" → "宿舍 熄灯"），
+        # 而交给路由/知识库的是用户原话
+        assert len(searched) == 1 and "宿舍" in searched[0], searched
+        assert decided == ["宿舍几点熄灯"], decided
+        assert asked == ["宿舍几点熄灯"], asked
+        assert len(client.api._http.payloads) == 1, client.api._http.payloads
+        print("[OK] 全量模式：@机器人 提问 → 走完整兜底并查知识库（和 @事件 一致）")
 
-        # 明确的找群句式（甚至不用 @）→ 只搜群，回一条
+        # ③ @了机器人 + 裸词「王者荣耀」→ 同样走完整兜底（不再被静默丢掉）
+        searched.clear()
+        asked.clear()
+        decided.clear()
+        client.api._http.payloads.clear()
+        bare_at = fake_message(
+            msg_id="FULL_AT_BARE", content="<@BOT_OPENID> 王者荣耀 ",
+            mentions=[("BOT_OPENID", True)], api=client.api,
+        )
+        await client._handle_group(bare_at, group_full_message=True)
+        assert decided == ["王者荣耀"], decided
+        assert len(client.api._http.payloads) == 1, client.api._http.payloads
+        print("[OK] 全量模式：@机器人 说裸词「王者荣耀」→ 交给完整兜底（不再没反应）")
+
+        # ④ 明确的找群句式（不用 @）→ 零成本快速通道：只搜群，不调模型/知识库
+        searched.clear()
+        asked.clear()
+        decided.clear()
+        client.api._http.payloads.clear()
         found = fake_message(msg_id="FULL_FOUND", content="有没有计算机群", api=client.api)
         await client._handle_group(found, group_full_message=True)
         assert searched == ["计算机"], searched
         assert asked == [] and decided == [], (asked, decided)
         assert len(client.api._http.payloads) == 1, client.api._http.payloads
         assert "CIC计算机" in client.api._http.payloads[0]["markdown"]["content"]
-        print("[OK] 全量模式：「有没有计算机群」自动搜群并回复（不 @ 也响应）")
+        print("[OK] 全量模式：「有没有计算机群」只搜群并回复（零模型成本，不 @ 也响应）")
 
-        # 裸词（历史惯性的「王者荣耀」）在全量模式下保持安静，避免关键词误触发
+        # ⑤ @了机器人 + 明确找群 → 仍走便宜的快速通道（先判找群，再考虑完整兜底）
         searched.clear()
+        asked.clear()
+        decided.clear()
+        client.api._http.payloads.clear()
+        at_found = fake_message(
+            msg_id="FULL_AT_FOUND", content="<@BOT_OPENID> 有没有计算机群 ",
+            mentions=[("BOT_OPENID", True)], api=client.api,
+        )
+        await client._handle_group(at_found, group_full_message=True)
+        assert searched == ["计算机"], searched
+        assert decided == [] and asked == [], (decided, asked)
+        assert len(client.api._http.payloads) == 1, client.api._http.payloads
+        print("[OK] 全量模式：@机器人 + 明确找群 → 仍走只搜群的快速通道")
+
+        # ⑥ 没 @ 的裸词（历史惯性的「王者荣耀」）→ 保持安静，避免关键词误触发
+        searched.clear()
+        asked.clear()
+        decided.clear()
         client.api._http.payloads.clear()
         bare = fake_message(msg_id="FULL_BARE", content="王者荣耀", api=client.api)
         await client._handle_group(bare, group_full_message=True)
-        assert searched == [] and client.api._http.payloads == []
-        print("[OK] 全量模式：裸词「王者荣耀」保持安静（不打扰群聊）")
+        assert searched == [] and decided == [] and asked == [], (searched, decided, asked)
+        assert client.api._http.payloads == []
+        print("[OK] 全量模式：没 @ 的裸词「王者荣耀」保持安静（不打扰群聊）")
     finally:
         (bot_client.handlers, kb_qa.ask_knowledge_base,
          kb_qa.router.decide, kb_qa.CAMPUS_QA_ENABLED, gm.search_groups) = originals
@@ -1227,7 +1268,7 @@ async def main():
     test_router_env_is_independent()
     test_router_parsing_and_rules()
     test_group_matching_with_real_table()
-    await test_full_mode_only_explicit_group_search()
+    await test_full_mode_routing()
     test_lexiang_answer_cleaning()
     print("\n全部自检通过")
 

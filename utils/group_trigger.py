@@ -10,6 +10,8 @@
 本模块提供：
 - is_triggerable(): 判断消息是否允许机器人响应
   （命令前缀 / 白名单关键词 / 明确的找群句式 / 全量模式下 @了机器人）
+  注意这只是**第一道闸门**：通过之后由 bot_client._dispatch_group_handlers 再决定
+  「@了机器人 → 走完整兜底」还是「明确找群 → 只搜群」，其余静默
 - MessageDeduper: 按 msg_id 去重（官方提示相同 msg_id 可能重复推送）
 - describe_message(): 打印消息关键信息，便于排查「为什么没反应」
 """

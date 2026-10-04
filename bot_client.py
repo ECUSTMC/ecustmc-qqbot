@@ -143,9 +143,9 @@ class EcustmcClient(botpy.Client):
         """群消息「全量模式」处理
 
         机器人被群主授权「接收所有消息」后，群里每条消息都会推送此事件。
-        与 @ 事件字段完全一致，因此复用同一个处理入口，
-        区别在于：必须是显式命令（/ 前缀）、白名单关键词或明确 @ 了机器人
-        的消息才会响应，其余静默丢弃。
+        与 @ 事件字段完全一致，因此复用同一个处理入口，区别在于取舍：
+        **@ 了机器人**或**明确在找群**才响应（前者走完整兜底，后者只搜群），
+        其余闲聊一律静默丢弃。
         """
         return await self._handle_group(message, group_full_message=True)
 
@@ -191,13 +191,16 @@ class EcustmcClient(botpy.Client):
     async def _dispatch_group_handlers(self, message: GroupMessage, group_full_message: bool = False):
         """分发到各处理器；未命中时走「找群 / 校园问答」兜底
 
-        **全量消息模式（群里每条消息都能看到）只做零成本响应**：
-        只有明确在找群的说法（``有没有XX群`` / ``找XX群`` / ``拉我进群`` / ``群号``）
-        才去搜一次群并回复，其余一律静默 —— 全量模式下一旦调用大模型或知识库，
-        账单和限频都会爆炸。
+        **全量消息模式（群里每条消息都能看到）的取舍**：
 
-        @ 事件（``GROUP_AT_MESSAGE_CREATE``）与私聊不受此限制，走完整的
-        找群 / 校园问答流程。
+        * **明确在找群**的说法（``有没有XX群`` / ``找XX群`` / ``拉我进群`` / ``群号``）
+          → 零成本快速通道：只搜一次（带缓存的）群表就回复，不调模型也不查知识库；
+        * **@ 了机器人** → 按 @事件 对待，走完整的「找群 → 校园问答 → AI 对话」兜底
+          —— @ 是明确的召唤，值得花这一次调用；
+        * **其余**（群里闲聊、没 @ 的裸词与提问）→ 一律静默，绝不主动调用大模型或知识库，
+          否则群里每句话都会烧账单、撞限频。
+
+        @ 事件（``GROUP_AT_MESSAGE_CREATE``）与私聊不受此限制，始终走完整兜底。
         """
         for handler in handlers:
             if await handler(api=self.api, message=message):
@@ -205,17 +208,25 @@ class EcustmcClient(botpy.Client):
 
         if group_full_message:
             text = (getattr(message, "content", "") or "").strip()
-            if not intent.is_explicit_group_search(text):
+
+            # ① 明确找群 → 零成本快速通道（只查一次带 5 分钟缓存的群表）
+            if intent.is_explicit_group_search(text):
+                keyword = intent.extract_group_keyword(text) or text
+                _log.info(f"[全量消息] 明确找群 keyword={keyword!r}，只搜群不调用知识库")
+                try:
+                    await internal_find_group(api=self.api, message=message, search_key=keyword)
+                except Exception as e:  # noqa: BLE001 - 兜底不允许把异常抛回消息循环
+                    _log.error(f"全量消息找群失败: {e}")
+                    await safe_reply(message, content=f"调用出错: {e}")
+                return
+
+            # ② 没 @ 机器人 → 静默（群里闲聊不该被机器人插嘴，也不该烧账单）
+            if not group_trigger.mentions_bot(message, (self.robot_id,)):
                 _log.debug(f"[全量消息] 未命中指令，静默忽略: {describe_message(message)}")
                 return
-            keyword = intent.extract_group_keyword(text) or text
-            _log.info(f"[全量消息] 明确找群 keyword={keyword!r}，只搜群不调用知识库")
-            try:
-                await internal_find_group(api=self.api, message=message, search_key=keyword)
-            except Exception as e:  # noqa: BLE001 - 兜底不允许把异常抛回消息循环
-                _log.error(f"全量消息找群失败: {e}")
-                await safe_reply(message, content=f"调用出错: {e}")
-            return
+
+            # ③ @ 了机器人 → 掉下去，和 @事件 一样走完整兜底
+            _log.info(f"[全量消息] @了机器人 → 按 @事件 走完整兜底: {describe_message(message)}")
 
         # 兜底：先搜一遍群表，再由大模型判断「发群结果」还是「查知识库」；
         # 都不是则用已有的 AI 对话（ECUST_MODEL）回复；
@@ -341,10 +352,10 @@ async def main():
     # 以下 INFO 在 Client 实例化（log_level=30）之前打印，是启动时可见的
     group_trigger.FULL_MESSAGE_DEBUG = FULL_MESSAGE_DEBUG
     _log.info(
-        "群聊触发规则: 全量消息响应「指令前缀 / ／」「白名单关键词 %s」「@机器人」"
-        "「明确的找群句式：有没有XX群 / 找XX群 / 拉我进群 / 群号」"
+        "群聊触发规则: 全量消息响应「指令前缀 / ／」「白名单关键词 %s」「明确的找群句式："
+        "有没有XX群 / 找XX群 / 拉我进群 / 群号」「@了机器人（按 @事件 走完整兜底）」"
         "（平台下发的 content 形如 '<@openid> /通知'，开头占位符会被自动剥离）；"
-        "@事件 保持原有行为（未命中指令时走完整兜底：先搜群，再决定发群或查知识库）",
+        "其余闲聊静默；@事件 保持原有行为（未命中指令时走完整兜底：先搜群，再决定发群或查知识库）",
         "/".join(sorted(group_trigger.BARE_COMMANDS)) or "(无)",
     )
     if FULL_MESSAGE_DEBUG:
@@ -357,7 +368,8 @@ async def main():
             "②由 %s 判断（send_group / query_kb）→ ③发群结果 和/或 查知识库"
             "（知识库回答里的插图按 QQ markdown 语法内嵌在同一条卡片里），"
             "都不是则交给已有的 AI 对话（AI_GROUP_ENABLED=%s）；知识范围=%s, qa_mode=%s；"
-            "路由入口=%s；全量消息模式只响应明确的找群句式（不调用大模型/知识库）",
+            "路由入口=%s；全量消息模式下 @我 按 @事件 走完整兜底，"
+            "明确找群句式只搜群，其余闲聊静默",
             config.ROUTER_MODEL or "(未配置，走规则)",
             AI_GROUP_ENABLED,
             config.LEXIANG_TARGETS or "全站知识",
