@@ -9,7 +9,7 @@
 
 本模块提供：
 - is_triggerable(): 判断消息是否允许机器人响应
-  （命令前缀 / 白名单关键词 / 全量模式下 @了机器人）
+  （命令前缀 / 白名单关键词 / 明确的找群句式 / 全量模式下 @了机器人）
 - MessageDeduper: 按 msg_id 去重（官方提示相同 msg_id 可能重复推送）
 - describe_message(): 打印消息关键信息，便于排查「为什么没反应」
 """
@@ -17,6 +17,8 @@
 import re
 import time
 from collections import OrderedDict
+
+from utils import intent
 
 # 允许无前缀、纯关键词触发的指令白名单（仅在 @机器人 时生效）
 BARE_COMMANDS = {"vv"}
@@ -125,6 +127,12 @@ def is_triggerable(message, group_full_message: bool = False, bot_ids=()) -> boo
         return False
 
     if is_command(content) or is_bare_command(content):
+        return True
+
+    # 「明确的找群句式」（有没有XX群 / 找XX群 / 拉我进群 / 群号）也放行：
+    # 这是零成本响应（只查一次带缓存的群表），群友不必先 @ 机器人；
+    # 裸词（"王者荣耀"）与普通闲聊不在放行之列，避免打扰群聊。
+    if intent.is_explicit_group_search(content):
         return True
 
     return mentions_bot(message, bot_ids)

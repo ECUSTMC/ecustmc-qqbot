@@ -101,6 +101,42 @@ if class_api_token is None:
 ai_group_enabled = os.getenv("AI_GROUP_ENABLED", "false").lower() == "true"
 ai_direct_enabled = os.getenv("AI_DIRECT_ENABLED", "false").lower() == "true"
 
+# ---------------------------------------------------------------------------
+# 校园问答：腾讯乐享知识库（https://lexiang.tencent.com/wiki/api/）
+# 用于「默认 @ 机器人时回答学校相关问题」，未配置凭据时该功能自动关闭
+# ---------------------------------------------------------------------------
+# 「苏群新生指南」知识库的 space id（已用 GET /cgi-bin/v1/kb/spaces/<id> 核实：
+# name=苏群新生指南，团队 c1aade5abfcf11f182f47612c9e9ccf7，根节点 e3d62e27014441e5bfb1ac255cb07166）
+# 用它做 targets 可以把检索严格限制在这个知识库内
+DEFAULT_CAMPUS_KB_SPACE_ID = "19e383358f904015bf1eb3101b2ad332"
+
+lexiang_app_key = os.getenv("LEXIANG_APP_KEY", "")
+lexiang_app_secret = os.getenv("LEXIANG_APP_SECRET", "")
+lexiang_base_url = os.getenv("LEXIANG_BASE_URL", "https://lxapi.lexiangla.com")
+# x-staff-id：传 system-bot 表示匿名调用，只能读到「公开」知识
+lexiang_staff_id = os.getenv("LEXIANG_STAFF_ID", "system-bot")
+# 问答模式：normal(快) / normal-hy3 / normal-ds-v4-flash / reasoning-hy3(深度思考，慢)
+lexiang_qa_mode = os.getenv("LEXIANG_QA_MODE", "normal")
+# 知识范围，格式 "space:xxx,team:yyy,kb_entry:zzz"
+# 默认只查「苏群新生指南」，避免检索跑到授权范围内的其他知识库
+lexiang_targets = os.getenv(
+    "LEXIANG_TARGETS", f"space:{DEFAULT_CAMPUS_KB_SPACE_ID}"
+).strip()
+
+# 校园问答总开关（缺凭据时强制关闭）
+campus_qa_requested = os.getenv("CAMPUS_QA_ENABLED", "false").lower() == "true"
+campus_qa_enabled = (
+    campus_qa_requested and bool(lexiang_app_key) and bool(lexiang_app_secret)
+)
+# 消息路由（判断「找群 / 查知识库 / 走 AI 对话」）用**独立**的一套配置：
+# 不能和 /ai、/model 共用 —— /model 会在运行时改 ECUST_MODEL 并写回 .env，
+# 路由跟着变就会莫名其妙地换模型（推理型模型还会把 max_tokens 花在思考上）。
+# 三个都不配时退回 ECUST_* ，保证开箱可用。
+router_api_key = os.getenv("ROUTER_API_KEY", "").strip() or ecust_api_key
+router_url = os.getenv("ROUTER_URL", "").strip() or ecust_url
+router_model = os.getenv("ROUTER_MODEL", "").strip()
+router_timeout = float(os.getenv("ROUTER_TIMEOUT", "10") or 10)
+
 # 飞书配置
 feishu_app_id = os.getenv("FEISHU_APP_ID")
 feishu_app_secret = os.getenv("FEISHU_APP_SECRET")

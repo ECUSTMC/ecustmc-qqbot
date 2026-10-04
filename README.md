@@ -2,37 +2,51 @@
 
 华东理工大学 Minecraft 社团 QQ 机器人，基于 [botpy](https://github.com/tencent-connect/botpy) 开发。
 
+功能：校园天气、校车/空教室查询、MC 服务器状态与 RCON 管理、整合包投票、AI 对话、
+每日人品运势、表情包与娱乐指令，以及**默认 @ 的三分支兜底**（找群 / 校园问答 / AI 对话）。
+
+> 📖 本文只讲「这是什么、怎么跑起来」。功能细节、配置项、排障都在
+> **[ADVANCED.md](ADVANCED.md)**：默认 @ 的路由流程、只发可信群、知识库配图、
+> 路由模型与内外网 newapi、乐享接口速查、全量模式、`msg_seq` 去重等。
+
 ## 项目结构
 
 ```
 ecustmc-qqbot/
 ├── main_new.py                  # 主入口
 ├── bot_client.py                # 机器人客户端主逻辑
-├── selfcheck.py                 # 离线自检（msg_seq 去重 / 触发判定，无需联网）
+├── selfcheck.py                 # 离线自检（无需联网、无需 QQ 凭据）
 ├── config.py                    # 配置管理模块
 ├── r.py                         # 环境变量配置（从 .env 读取）
+├── ADVANCED.md                  # 进阶说明：路由 / 找群 / 校园问答 / 全量模式
 ├── utils/                       # 工具模块
-│   ├── database.py             # 数据库操作工具
-│   ├── network.py              # 网络工具函数
-│   ├── reply.py                # safe_reply：兜底回复失败只记日志不抛异常
-│   ├── reply_seq.py            # 回复 msg_seq 自动递增补丁（40054005 去重）
-│   ├── group_message_patch.py  # 群消息「全量模式」SDK 补丁
-│   └── group_trigger.py        # 群聊触发判定与消息去重
+│   ├── database.py              # 数据库操作工具
+│   ├── intent.py                # 「找群 / 校园问答」意图判定（纯规则）
+│   ├── router.py                # 路由大模型：决定发群还是查知识库
+│   ├── lexiang_client.py        # 腾讯乐享知识库 OpenAPI 客户端
+│   ├── network.py               # 网络工具函数
+│   ├── reply.py                 # safe_reply：回复失败只记日志不抛异常
+│   ├── reply_seq.py             # 回复 msg_seq 自动递增补丁（40054005 去重）
+│   ├── group_message_patch.py   # 群消息「全量模式」SDK 补丁
+│   └── group_trigger.py         # 群聊触发判定与消息去重
+├── tests/fixtures/
+│   └── feishu_groups.json       # 真实飞书群表快照（119 个群，含「是否可信」标记）
 └── handlers/                    # 命令处理器模块
-    ├── ai.py                   # AI 对话、模型切换
-    ├── bus.py                  # 校车查询
-    ├── classroom.py            # 空教室查询
-    ├── daily.py                # 一言、黄历、通知
-    ├── entertainment.py        # 表情包、三角洲密码
-    ├── fortune.py              # 人品、运势、塔罗牌、求签
-    ├── group_management.py     # 群组查找
-    ├── help.py                 # 帮助、Wiki
-    ├── minecraft.py            # MC 服务器命令
-    ├── network_tools.py        # IP 查询、ping、nslookup
-    ├── server.py               # 服务器状态管理
-    ├── vote.py                 # 整合包投票
-    ├── authorize.py            # 群主授权引导
-    └── weather.py              # 天气查询
+    ├── ai.py                    # AI 对话、模型切换
+    ├── bus.py                   # 校车查询
+    ├── classroom.py             # 空教室查询
+    ├── daily.py                 # 一言、黄历、通知
+    ├── entertainment.py         # 表情包、三角洲密码
+    ├── fortune.py               # 人品、运势、塔罗牌、求签
+    ├── group_management.py      # 群组查找（飞书群表）
+    ├── help.py                  # 帮助、Wiki
+    ├── kb_qa.py                 # 校园问答（乐享知识库）+ 默认 @ 的兜底路由
+    ├── minecraft.py             # MC 服务器命令
+    ├── network_tools.py         # IP 查询、ping、nslookup
+    ├── server.py                # 服务器状态管理
+    ├── vote.py                  # 整合包投票
+    ├── authorize.py             # 群主授权引导
+    └── weather.py               # 天气查询
 ```
 
 ## 支持的命令
@@ -49,17 +63,20 @@ ecustmc-qqbot/
 | AI | `/ai` `/model` `/models` | AI 对话与模型管理 |
 | 校园 | `/校车` `/空教室` | 校车时刻表、空教室查询 |
 | 群组 | `/找群` | 搜索群组 |
+| 校园问答 | `/问答 <问题>` | 基于乐享知识库回答学校相关的问题（转专业、宿舍、军训…） |
 | 授权 | `/授权` | 查看「接收所有消息」群主授权指引 |
 | 帮助 | `/帮助` `/wiki` | 帮助信息 |
 
 ## 环境准备
 
 1. 安装依赖：
+
    ```bash
    pip install -r requirements.txt
    ```
 
-2. 配置 `.env` 文件（参考 `r.py` 中的变量名），填入以下必要配置项：
+2. 配置 `.env`（可参考 `.env.example`，变量名见 `r.py`）：
+
    - `appid` / `secret`：QQ 机器人凭据
    - `weather_api_token`：高德天气 API Key
    - `api_app_id` / `api_app_secret`：黄历 API 凭据
@@ -67,7 +84,8 @@ ecustmc-qqbot/
    - `mc_server` / `mc_rcon_port` / `mc_rcon_password`：RCON 配置
    - `mcvote_api_url` / `mcvote_api_token`：整合包投票 API 配置
    - `baidu_api_key`：AI 对话 API Key
-   - 其他可选配置见 `config.py`
+   - `LEXIANG_APP_KEY` / `LEXIANG_APP_SECRET`：腾讯乐享知识库凭据（校园问答）
+   - `LEXIANG_TARGETS` / `CAMPUS_QA_ENABLED` / `ROUTER_*`：校园问答与路由模型，见 [ADVANCED.md](ADVANCED.md#校园问答配置项)
 
 ## 启动方式
 
@@ -89,6 +107,7 @@ python main_new.py
 - **fortune.py**：`/今日人品` `/今日运势` `/塔罗牌` `/求签`
 - **group_management.py**：`/找群` 群组搜索（联动飞书数据）
 - **help.py**：`/帮助` `/wiki`
+- **kb_qa.py**：`/问答` 校园问答（乐享知识库）+ 默认 @ 的「找群 / 问答」兜底路由
 - **minecraft.py**：`/mc` MC 服务器 RCON 命令（支持交互式按钮）
 - **network_tools.py**：`/ip` `/nslookup` `/ping`
 - **server.py**：`/服务器状态` `/status` `/添加服务器` `/移除服务器`
@@ -99,10 +118,54 @@ python main_new.py
 
 - **database.py**：数据库操作相关函数，包括用户运势数据管理
 - **network.py**：网络工具函数，包括 IP 检查、域名解析、飞书 API 等
+- **intent.py**：找群 / 提问的意图判定与群关键词提取（纯规则，可离线自检）
+- **router.py**：路由大模型（`ROUTER_*`），判断该发群结果还是查知识库；失败自动熔断并降级为规则
+- **lexiang_client.py**：腾讯乐享知识库 OpenAPI 客户端（AI 问答、知识库详情、targets 核实）
 
 ### config.py
 
 统一管理所有配置项，从 `r.py` 模块导入配置，提供清晰的配置接口。
+
+## 默认 @ 机器人
+
+被 **@**（或私聊）且没命中任何指令时，机器人会**先拿这句话去飞书群表搜一遍**
+（群友常只丢一个「王者荣耀」「三角洲」），然后：
+
+1. **明确在找群**（「有没有XX群」）→ 有结果就发结果、没有就说没找到（不花大模型调用）；
+2. 其余交给路由大模型判断，三种走向：**只发群结果** / **查校园知识库**
+   （答案 + 引用来源，正文里的插图按 QQ markdown 语法内嵌在同一条卡片里）/
+   **用已有的 `/ai` 对话回复**；
+3. 大模型不可用时自动降级为规则判断，并熔断 60 秒。
+
+```
+@机器人 转专业怎么申请  → 查知识库（《2026学生手册》等来源）
+@机器人 有没有计算机群  → 直接发群结果
+@机器人 今天天气怎么样  → 交给 /ai 对话
+```
+
+完整流程、真机联调耗时、只发「可信」群、路由模型与内外网 newapi、
+找群匹配规则、乐享接口速查与排障：**[ADVANCED.md](ADVANCED.md#默认--机器人先搜群再决定发群--查知识库--走-ai-对话)**。
+
+## 群消息「全量模式」
+
+群主可在群内为机器人开启「接收所有消息」，开启后群里每条消息都会推送过来。
+本项目在**全量模式下只响应零成本的消息**（`/` 指令、`vv`、明确 @ 机器人、
+明确的找群句式），**绝不调用大模型和知识库**，其余一律静默 ——
+群里每条消息都自动回答会持续烧钱并撞限频。
+
+授权方法、触发规则、`msg_seq` 去重与「@机器人 没反应」的排查：
+**[ADVANCED.md](ADVANCED.md#群消息全量模式接收所有消息)**。
+
+## 注意事项
+
+- `.env` 文件包含所有 API Key 和凭据，已加入 `.gitignore`，请勿提交到公开仓库
+- 数据文件（如 `jrys.json`、`Tarots.json`、`bus_schedule_*.json` 等）需要保持最新
+- 依赖包版本见 `requirements.txt`
+- 改完代码建议跑一次离线自检（不需要网络与 QQ 凭据）：
+
+  ```bash
+  python selfcheck.py          # 全部自检通过
+  ```
 
 ## 重构优势
 
@@ -111,108 +174,3 @@ python main_new.py
 3. **可维护性**：修改某个功能时只需要关注对应的模块
 4. **可扩展性**：添加新功能时只需要创建新的处理器模块
 5. **代码复用**：公共工具函数提取到 utils 模块中
-
-## 注意事项
-
-- `.env` 文件包含所有 API Key 和凭据，已加入 `.gitignore`，请勿提交到公开仓库
-- 数据文件（如 `jrys.json`、`Tarots.json`、`bus_schedule_*.json` 等）需要保持最新
-- 依赖包版本见 `requirements.txt`
-
-
-## 群消息「全量模式」（接收所有消息）
-
-机器人默认只能收到 **@它** 的消息。QQ 开放平台支持在群内开启「接收所有消息」，
-开启后群里的每条消息都会通过 `GROUP_MESSAGE_CREATE` 事件推送。
-
-### 如何在群里触发授权
-
-群主 / 管理员无法通过指令直接授权（平台限制，必须手动点），流程是：
-
-1. 在群里 **@机器人** 并发送 `/授权`
-2. 机器人回复操作指引卡片
-3. 群主在 QQ 客户端 → 群设置 → **群机器人** → 本机器人资料页
-   打开「**接收所有消息**」并点击「同意」
-4. 平台回调 `GROUP_MSG_RECEIVE` 事件，机器人在群里回执 ✅
-
-授权 **按群独立**，每个群都要单独开一次。关掉时回调 `GROUP_MSG_REJECT`。
-
-> 找不到开关通常是平台还没对该机器人开放此能力（部分机器人需要企业主体认证）。
-
-### 实现要点
-
-`qq-botpy` 1.2.1 之后未再更新，不认识 `GROUP_MESSAGE_CREATE`，事件会被静默丢弃：
-
-- `utils/group_message_patch.py`：在 Client 实例化 **之前** 补齐 parser，
-  并增强 `GroupMessage` 字段解析（`member_role` / `message_type` /
-  `message_scene` / `msg_elements` / `ark_data`）。
-- `utils/group_trigger.py`：全量模式下只响应 `/` 前缀指令、白名单关键词与
-  **明确 @ 了机器人** 的消息，其余静默丢弃，避免「群里聊到 vv」被误触发。
-- `utils/reply_seq.py`：回复时自动递增 `msg_seq`（见下文「消息被去重」）。
-
-### 行为约定
-
-| 事件 | 响应条件 |
-|------|----------|
-| `GROUP_AT_MESSAGE_CREATE`（@机器人） | 保持原有行为，未命中指令时走兜底 |
-| `GROUP_MESSAGE_CREATE`（全量） | 剥掉开头 `<@openid>` 后是 `/` 指令或 `vv`，或消息 @ 了机器人；其余静默；不走兜底（不扫群、不触发 AI） |
-
-全量消息按 `msg_id` 去重（官方提示同一 `msg_id` 可能重复推送）。
-**触发判定在去重之前**：被判定为「不响应」的全量消息不会占用 `msg_id`，
-否则同一条消息随后再以 @事件 到达时会被误当成重复消息丢掉，
-表现就是「群里 @机器人 反而没反应」。
-
-### 排障
-
-#### 40054005「消息被去重，请检查请求msgseq」
-
-官方规则：**相同的 `msg_id + msg_seq` 重复发送会失败**，
-同一条消息要多次回复必须递增 `msg_seq`；主动消息重复 `msg_seq` 同样会被判重。
-而 `qq-botpy` 把 `msg_seq` 写死成默认值 `1`，所以只要一条消息回了两次
-（错误兜底、先发回执再撤回、多段消息…）就必然报这个错。
-
-修复：
-
-- `utils/reply_seq.py` 在 `BotAPI.post_group_message` / `post_c2c_message`
-  外层包了一层，按 `msg_id` / `event_id` / 会话自动分配递增序号，
-  调用方显式传的 `msg_seq`（如 `peek_detect` 的 `msg_seq=2`）依然生效。
-- 处理器若已经回复过用户，必须 `return True` 终止分发，不能返回 `False`/`None`，
-  否则会继续走兜底、用同一个 `msg_id` 再回一条。
-- 兜底回复统一走 `utils/reply.py::safe_reply`，失败只记日志，不再抛异常刷 traceback。
-
-#### 「@机器人 没反应」
-
-**关键坑**：全量模式（`GROUP_MESSAGE_CREATE`）下平台**不会**去掉「@机器人」前缀，
-而是原样下发形如 `<@93C3B65BF2EE20F5A11FFB14EC18EF85> /通知 ` 的内容
-（`content` 里带 `<@openid>` 占位符）。若只判断「是否以 `/` 开头」，
-`@ECUSTMC /通知` 就永远不匹配、被静默丢弃 —— 这就是「@了没反应」的根因。
-
-修复：`utils/group_trigger.py::strip_leading_mentions()` 会先剥掉开头的
-`<@openid>` 占位符再判定 / 再交给处理器（正文里 @ 别人不受影响）。
-
-@ 的识别还有一层坑：群事件里被 @ 的用户用 **openid**，而
-`botpy.Client.robot.id` 是**数字 appid**（`robot.py` 里 `int(data["id"])`），
-两者对不上，所以 `mentions` 与本机 id 无法直接比较。因此触发规则为：
-
-1. 剥掉占位符后以 `/`、`／` 开头；
-2. 剥掉占位符后命中白名单关键词（`vv`）；
-3. `mentions` 里出现 `bot=true` 的条目（@ 了机器人，本群通常只有本机器人）；
-4. `mentions` 命中调用方给出的候选 id（将来若能拿到机器人 openid 即可精确匹配）。
-
-其余（含图片/卡片、只 @ 人无正文）静默丢弃，机器人（含自己）发的消息一律不响应，
-避免全量模式下「机器人转述指令」形成自问自答的死循环。
-
-排查手段：
-
-- 启动日志会打印「群聊触发规则」和 `on_ready` 的 `robot_id`；
-- 把 `.env` 里的 `FULL_MESSAGE_DEBUG` 设为 `true`，被忽略的全量消息会打 WARNING，
-  格式为 `content=... type=... author=... mentions=['93C3B65B(bot)']`
-  —— 从 `(bot)` 标记就能看出平台有没有把机器人标成 `bot=true`。
-
-#### 离线自检
-
-```bash
-python3 selfcheck.py
-```
-
-不需要网络与 QQ 凭据，覆盖：`msg_seq` 递增、全量消息触发判定、
-`msg_id` 去重、兜底回复不抛异常。

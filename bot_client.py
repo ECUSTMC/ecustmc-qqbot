@@ -21,6 +21,8 @@ from handlers.group_management import find_group, internal_find_group
 from handlers.bus import query_bus
 from handlers.classroom import query_empty_classroom
 from handlers.peek_detect import peek_detect
+# 校园问答（乐享知识库）+ 默认 @ 的兜底路由：先搜群，再由大模型决定发群 or 查知识库
+from handlers.kb_qa import handle_default_reply, kb_qa_command
 
 # 应用「群消息全量模式」SDK 补丁（必须在 Client 实例化之前导入）
 from utils.group_message_patch import apply_group_message_patch
@@ -28,11 +30,13 @@ from utils.group_message_patch import apply_group_message_patch
 from utils.reply_seq import apply_reply_seq_patch
 from utils.reply import safe_reply
 from utils import group_trigger
+from utils import intent
 from utils.group_trigger import is_triggerable, deduper, describe_message
 
 from handlers.authorize import authorize_group
 
 from config import APPID, SECRET, AI_GROUP_ENABLED, AI_DIRECT_ENABLED, FULL_MESSAGE_DEBUG
+from config import CAMPUS_QA_ENABLED, CAMPUS_QA_REQUESTED
 import config
 
 _log = botpy.logging.get_logger()
@@ -76,6 +80,7 @@ handlers = [
     switch_model,
     query_vote,
     peek_detect,
+    kb_qa_command,
     authorize_group
 ]
 
@@ -121,33 +126,13 @@ class EcustmcClient(botpy.Client):
             if await handler(api=self.api, message=message):
                 return
 
-        if AI_DIRECT_ENABLED:
-            try:
-                if await direct_chat_with_clawdbot(api=self.api, message=message):
-                    return
-            except Exception as e:
-                _log.error(f"私聊AI调用失败: {str(e)}")
-                user_input = message.content.strip().replace("群", "")
-                if user_input:
-                    try:
-                        await internal_find_group(api=self.api, message=message, search_key=user_input)
-                        return
-                    except Exception as find_error:
-                        _log.error(f"兜底找群失败: {str(find_error)}")
-                        await safe_reply(message, content=f"调用出错: {str(find_error)}")
-                else:
-                    await safe_reply(message, content=f"调用出错: {str(e)}")
-        else:
-            user_input = message.content.strip().replace("群", "")
-            if user_input:
-                try:
-                    await internal_find_group(api=self.api, message=message, search_key=user_input)
-                    return
-                except Exception as e:
-                    _log.error(f"兜底找群失败: {str(e)}")
-                    await safe_reply(message, content=f"调用出错: {str(e)}")
-            else:
-                await safe_reply(message, content="不明白你在说什么哦(๑• . •๑)")
+        # 兜底：先判断是不是找群，不是就用知识库回答学校相关问题
+        ai_chat = direct_chat_with_clawdbot if AI_DIRECT_ENABLED else None
+        if await handle_default_reply(api=self.api, message=message, ai_chat=ai_chat):
+            return
+
+        if not (message.content or "").strip():
+            await safe_reply(message, content="不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_at_message_create(self, message: GroupMessage):
         """群组 @机器人 消息处理（保持原有行为）"""
@@ -203,46 +188,46 @@ class EcustmcClient(botpy.Client):
         return await self._dispatch_group_handlers(message, group_full_message)
 
     async def _dispatch_group_handlers(self, message: GroupMessage, group_full_message: bool = False):
-        """分发到各处理器；全量模式下禁用「兜底找群 / 兜底 AI」"""
+        """分发到各处理器；未命中时走「找群 / 校园问答」兜底
+
+        **全量消息模式（群里每条消息都能看到）只做零成本响应**：
+        只有明确在找群的说法（``有没有XX群`` / ``找XX群`` / ``拉我进群`` / ``群号``）
+        才去搜一次群并回复，其余一律静默 —— 全量模式下一旦调用大模型或知识库，
+        账单和限频都会爆炸。
+
+        @ 事件（``GROUP_AT_MESSAGE_CREATE``）与私聊不受此限制，走完整的
+        找群 / 校园问答流程。
+        """
         for handler in handlers:
             if await handler(api=self.api, message=message):
                 return
 
-        # 全量模式下绝不走兜底逻辑：
-        # 否则群里每一句话都会被 internal_find_group / AI 扫一遍，既误报又限频
         if group_full_message:
-            _log.debug(f"[全量消息] 未命中指令，静默忽略: {describe_message(message)}")
+            text = (getattr(message, "content", "") or "").strip()
+            if not intent.is_explicit_group_search(text):
+                _log.debug(f"[全量消息] 未命中指令，静默忽略: {describe_message(message)}")
+                return
+            keyword = intent.extract_group_keyword(text) or text
+            _log.info(f"[全量消息] 明确找群 keyword={keyword!r}，只搜群不调用知识库")
+            try:
+                await internal_find_group(api=self.api, message=message, search_key=keyword)
+            except Exception as e:  # noqa: BLE001 - 兜底不允许把异常抛回消息循环
+                _log.error(f"全量消息找群失败: {e}")
+                await safe_reply(message, content=f"调用出错: {e}")
             return
 
-        # 兜底回复一律走 safe_reply：即使平台报错（去重 / 限频 / 内容违规）
-        # 也只记日志，不再向上抛异常刷 traceback
-        if AI_GROUP_ENABLED:
-            try:
-                if await group_chat_with_clawdbot(api=self.api, message=message):
-                    return
-            except Exception as e:
-                _log.error(f"群聊AI调用失败: {str(e)}")
-                user_input = message.content.strip().replace("群", "")
-                if user_input:
-                    try:
-                        await internal_find_group(api=self.api, message=message, search_key=user_input)
-                        return
-                    except Exception as find_error:
-                        _log.error(f"兜底找群失败: {str(find_error)}")
-                        await safe_reply(message, content=f"调用出错: {str(find_error)}")
-                else:
-                    await safe_reply(message, content=f"调用出错: {str(e)}")
-        else:
-            user_input = message.content.strip().replace("群", "")
-            if user_input:
-                try:
-                    await internal_find_group(api=self.api, message=message, search_key=user_input)
-                    return
-                except Exception as e:
-                    _log.error(f"兜底找群失败: {str(e)}")
-                    await safe_reply(message, content=f"调用出错: {str(e)}")
-            else:
-                await safe_reply(message, content="不明白你在说什么哦(๑• . •๑)")
+        # 兜底：先搜一遍群表，再由大模型判断「发群结果」还是「查知识库」；
+        # 回复一律走 safe_reply，失败只记日志不抛异常
+        ai_chat = group_chat_with_clawdbot if AI_GROUP_ENABLED else None
+        try:
+            if await handle_default_reply(api=self.api, message=message, ai_chat=ai_chat):
+                return
+        except Exception as e:  # noqa: BLE001 - 兜底不允许把异常抛回消息循环
+            _log.error(f"兜底回复失败: {e}")
+            await safe_reply(message, content=f"调用出错: {e}")
+            return
+
+        await safe_reply(message, content="不明白你在说什么哦(๑• . •๑)")
 
     async def on_group_add_robot(self, message: GroupManageEvent):
         """机器人被添加到群组事件"""
@@ -355,12 +340,52 @@ async def main():
     group_trigger.FULL_MESSAGE_DEBUG = FULL_MESSAGE_DEBUG
     _log.info(
         "群聊触发规则: 全量消息响应「指令前缀 / ／」「白名单关键词 %s」「@机器人」"
+        "「明确的找群句式：有没有XX群 / 找XX群 / 拉我进群 / 群号」"
         "（平台下发的 content 形如 '<@openid> /通知'，开头占位符会被自动剥离）；"
-        "@事件 保持原有行为（未命中指令时走兜底）",
+        "@事件 保持原有行为（未命中指令时走完整兜底：先搜群，再决定发群或查知识库）",
         "/".join(sorted(group_trigger.BARE_COMMANDS)) or "(无)",
     )
     if FULL_MESSAGE_DEBUG:
         _log.info("FULL_MESSAGE_DEBUG=true：被忽略的全量消息将以 WARNING 级别输出")
+
+    # 默认 @ 的兜底规则：先搜群 → 大模型判断 → 发群结果 / 查知识库 / 走 AI 对话
+    if CAMPUS_QA_ENABLED:
+        _log.info(
+            "默认回复规则: @我 → ①先搜一遍飞书群表（明确找群直接答复，只发可信群）→ "
+            "②由 %s 判断（send_group / query_kb）→ ③发群结果 和/或 查知识库"
+            "（知识库回答里的插图按 QQ markdown 语法内嵌在同一条卡片里），"
+            "都不是则交给已有的 AI 对话（AI_GROUP_ENABLED=%s）；知识范围=%s, qa_mode=%s；"
+            "路由入口=%s；全量消息模式只响应明确的找群句式（不调用大模型/知识库）",
+            config.ROUTER_MODEL or "(未配置，走规则)",
+            AI_GROUP_ENABLED,
+            config.LEXIANG_TARGETS or "全站知识",
+            config.LEXIANG_QA_MODE,
+            config.ROUTER_URL or "(未配置)",
+        )
+        try:
+            from utils.lexiang_client import LexiangClient
+
+            async with LexiangClient() as _client:
+                verified = await _client.verify_targets()
+            if verified["ok"] and verified["spaces"]:
+                for space in verified["spaces"]:
+                    _log.info(
+                        "校园问答知识库已核实: %s（space id=%s，团队=%s）",
+                        space["name"] or "(未知)",
+                        space["id"],
+                        space["team_id"] or "-",
+                    )
+            else:
+                _log.warning("校园问答知识库核实失败: %s", verified.get("error") or "无 space 目标")
+        except Exception as e:  # noqa: BLE001 - 启动自检失败不影响运行
+            _log.warning("校园问答知识库核实异常: %s", e)
+    elif CAMPUS_QA_REQUESTED:
+        _log.warning(
+            "CAMPUS_QA_ENABLED=true 但缺少 LEXIANG_APP_KEY / LEXIANG_APP_SECRET，"
+            "校园问答已自动关闭，默认回复会退回旧逻辑（找群）"
+        )
+    else:
+        _log.info("校园问答未启用（CAMPUS_QA_ENABLED=false），默认回复保持旧逻辑（找群）")
 
     intents = botpy.Intents(
         direct_message=True,

@@ -16,6 +16,10 @@ async def help(api: BotAPI, message: GroupMessage, params=None):
         "***\n\n"
         "- 🔗 [萌新指南](https://mc.ecustvr.top/tutorial)：游戏、启动器及账号配置\n"
         "- 🔗 [QQBot帮助](https://mc.ecustvr.top/qqbot)：bot指令帮助\n"
+        "- 🎓 直接 **@我** 说一句话就行：我会先看看有没有对应的群（`王者荣耀`、`三角洲`…），\n"
+        "  没有的话再查知识库回答学校的事（转专业、宿舍、军训、食堂…）\n"
+        "- 🔍 想找群：@我 说「有没有XX群」，或发送 `/找群 XX`\n"
+        "- 📖 想指定查知识库：`/问答 你的问题`\n"
         "- 🔐 发送 /授权 ：查看「开启接收所有消息」的群主授权方法\n\n"
         "祝游戏愉快！"
     )
