@@ -48,6 +48,24 @@ CLASS_API_KEY = r.class_api_token
 AI_GROUP_ENABLED = r.ai_group_enabled
 AI_DIRECT_ENABLED = r.ai_direct_enabled
 
+# 校园问答（腾讯乐享知识库）—— 默认 @ 机器人时回答学校相关问题
+LEXIANG_APP_KEY = r.lexiang_app_key
+LEXIANG_APP_SECRET = r.lexiang_app_secret
+LEXIANG_BASE_URL = r.lexiang_base_url
+LEXIANG_STAFF_ID = r.lexiang_staff_id
+LEXIANG_QA_MODE = r.lexiang_qa_mode
+LEXIANG_TARGETS = r.lexiang_targets
+CAMPUS_KB_SPACE_ID = r.DEFAULT_CAMPUS_KB_SPACE_ID
+# 缺凭据时自动关闭（见 r.py）
+CAMPUS_QA_ENABLED = r.campus_qa_enabled
+CAMPUS_QA_REQUESTED = r.campus_qa_requested
+
+# 消息路由（判断「找群 / 查知识库 / 走 AI 对话」）—— 与 /ai、/model 完全独立的一套配置
+ROUTER_API_KEY = r.router_api_key
+ROUTER_URL = r.router_url
+ROUTER_MODEL = r.router_model
+ROUTER_TIMEOUT = r.router_timeout
+
 # MC投票API配置
 MCVOTE_API_URL = r.mcvote_api_url
 MCVOTE_API_TOKEN = r.mcvote_api_token

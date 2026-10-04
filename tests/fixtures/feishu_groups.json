@@ -1,0 +1,1076 @@
+{
+ "source": "飞书群表导出快照（全部记录，含是否可信标记；加群链接不入库）",
+ "groups": [
+  {
+   "group_id": "615374518",
+   "group_name": "CIC计算机信息交流协会丨新人请加二群",
+   "description": "CIC计算机信息交流协会①群",
+   "member_count": 1792,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "681561592",
+   "group_name": "CIC计算机信息交流协会Mark.II丨欢迎25新生and所有院都可以来~",
+   "description": "CIC计算机信息交流协会②群",
+   "member_count": 842,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "287554113",
+   "group_name": "CIC计算机信息交流协会",
+   "description": "CIC计算机信息交流协会老群",
+   "member_count": 745,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "691265713",
+   "group_name": "24电竞部迎新群",
+   "description": "CIC计算机信息交流协会-电竞部",
+   "member_count": 219,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "875114735",
+   "group_name": "ECUST-无线电爱好者",
+   "description": "华东理工大学无线电交流",
+   "member_count": 7,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "484506558",
+   "group_name": "乌冬理工方块乐享部",
+   "description": "我的世界/Minecraft/MC",
+   "member_count": 522,
+   "max_member_count": 1000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "626180600",
+   "group_name": "守望先锋学术研讨论坛峰会（华理会场）",
+   "description": "守望先锋/Overwatch",
+   "member_count": 178,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "552750103",
+   "group_name": "乌冬理工鼠鼠聚集地",
+   "description": "三角洲行动/Delta Force",
+   "member_count": 164,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "792529306",
+   "group_name": "打洲社-华东理工大学",
+   "description": "三角洲行动/Delta Force（有游戏官方的群）",
+   "member_count": 542,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "858930629",
+   "group_name": "卡拉欧欧群",
+   "description": "卡拉彼丘/Karapichu",
+   "member_count": 58,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "477120987",
+   "group_name": "花梨 绝区零ZZZ「倒悬的守夜灯」",
+   "description": "绝区零/ZZZ",
+   "member_count": 172,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "312064523",
+   "group_name": "华理cs工会ECUST-3台",
+   "description": "反恐精英：全球攻势/CS:GO",
+   "member_count": 990,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "98327207",
+   "group_name": "华理日麻把把里三",
+   "description": "日本麻将/Japanese Mahjong",
+   "member_count": 484,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "795053381",
+   "group_name": "ECUST老八之弈＆铲铲",
+   "description": "金铲铲之战/云顶之弈/Teamfight Tactics",
+   "member_count": 81,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "537333957",
+   "group_name": "重返海湾：1999",
+   "description": "重返未来：1999/Reverse: 1999",
+   "member_count": 220,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "619091353",
+   "group_name": "华理空心皇帝模拟器",
+   "description": "APEX 英雄/Apex Legends",
+   "member_count": 333,
+   "max_member_count": 1000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "529565361",
+   "group_name": "乌冬术力口•pjsk交流群",
+   "description": "世界计划 多彩舞台！/ Project SEKAI",
+   "member_count": 261,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "639366489",
+   "group_name": "华理Valorant",
+   "description": "无畏契约/VALORANT",
+   "member_count": 930,
+   "max_member_count": 1000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "532365245",
+   "group_name": "ECUST英雄联盟交流群",
+   "description": "英雄联盟/LOL/League of Legends",
+   "member_count": 705,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "832114258",
+   "group_name": "CIRCLE华理SEKAI公会☆",
+   "description": "BanG Dream!/ 邦邦",
+   "member_count": 244,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "555293784",
+   "group_name": "乌冬理工fgo群",
+   "description": "命运 - 冠位指定/Fate/Grand Order/FGO",
+   "member_count": 273,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "785670425",
+   "group_name": "大学生振刀协会",
+   "description": "永劫无间/Naraka: Bladepoint",
+   "member_count": 249,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "681752107",
+   "group_name": "华理NS同好会",
+   "description": "Nintendo Switch/NS/Switch",
+   "member_count": 164,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "926265440",
+   "group_name": "英勇之地电脑版",
+   "description": "英勇之地/Brawl Stars",
+   "member_count": 721,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "343683662",
+   "group_name": "华理吃♂鸡♂研究会",
+   "description": "绝地求生/PUBG/PlayerUnknown's Battlegrounds",
+   "member_count": 92,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "659946675",
+   "group_name": "东中国科学技术大学ff14同好会",
+   "description": "最终幻想 14/Final Fantasy XIV/FF14",
+   "member_count": 103,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "581341861",
+   "group_name": "ECUST StarCraft Ⅱ",
+   "description": "星际争霸/StarCraft",
+   "member_count": 58,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "547342217",
+   "group_name": "华理DOTA2养成群",
+   "description": "DOTA2/Defense of the Ancients 2",
+   "member_count": 210,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "658783577",
+   "group_name": "ECUST炉石酒馆♿♿♿",
+   "description": "炉石传说新群/Hearthstone",
+   "member_count": 184,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "372511770",
+   "group_name": "华理+❤V💜炉石💛下棋群",
+   "description": "炉石传说老群/Hearthstone",
+   "member_count": 360,
+   "max_member_count": 1000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "626314374",
+   "group_name": "华理王者荣耀丨华理爸爸会",
+   "description": "王者荣耀/Honor of Kings",
+   "member_count": 934,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "104049397",
+   "group_name": "我得重新集结部队！",
+   "description": "魔兽争霸 3/Warcraft III",
+   "member_count": 195,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "563277221",
+   "group_name": "华理cf手游",
+   "description": "穿越火线手游/CrossFire Mobile/CFM",
+   "member_count": 27,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "115950211",
+   "group_name": "华理🌈蕉友群",
+   "description": "彩虹六号：围攻/Rainbow Six Siege",
+   "member_count": 64,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "941699421",
+   "group_name": "<$ÿĀ\">命运2肥宅公会<$ÿĀ\">",
+   "description": "命运 2/Destiny 2",
+   "member_count": 18,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "764552791",
+   "group_name": "ECUST KNIGHTS战地交流群",
+   "description": "战地风云/Battlefield",
+   "member_count": 80,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "826542331",
+   "group_name": "华理deadlock",
+   "description": "死锁/DEADLOCK",
+   "member_count": 35,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "604345565",
+   "group_name": "华理lolm交流群",
+   "description": "英雄联盟手游/League of Legends: Wild Rift",
+   "member_count": 12,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "862900842",
+   "group_name": "华理混战码头",
+   "description": "使命召唤/Call of Duty",
+   "member_count": 9,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "344218947",
+   "group_name": "花梨～星穹铁道丨于长夜忘却",
+   "description": "崩坏：星穹铁道/崩铁/星铁",
+   "member_count": 414,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "760221941",
+   "group_name": "海夜中文虚拟歌手同好会",
+   "description": "中文虚拟歌姬（海湾三校）",
+   "member_count": 183,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "663176075",
+   "group_name": "鸡沃托斯二周目",
+   "description": "蔚蓝档案/Blue Archive/BA",
+   "member_count": 115,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "867167915",
+   "group_name": "华理音游社迎新群",
+   "description": "华理音游社迎新群/音游",
+   "member_count": 120,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "324149166",
+   "group_name": "华理阴阳师同好群",
+   "description": "阴阳师",
+   "member_count": 74,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "851315375",
+   "group_name": "花梨叠纸游戏股东群（放假了陪暖暖版）",
+   "description": "花梨叠纸游戏股东群/暖暖/nikki",
+   "member_count": 32,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "903323431",
+   "group_name": "异度漫协明日方舟交流群",
+   "description": "明日方舟",
+   "member_count": 403,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1029191889",
+   "group_name": "相亲相爱刀客塔",
+   "description": "明日方舟",
+   "member_count": 386,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "280079266",
+   "group_name": "花梨～空月之歌！",
+   "description": "原神",
+   "member_count": 237,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "751907440",
+   "group_name": "Wuthering Ecust",
+   "description": "战双/鸣潮/mc",
+   "member_count": 236,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "628254305",
+   "group_name": "2025你🍐最有肉鸽之魂の一集",
+   "description": "肉鸽/单机",
+   "member_count": 188,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "839889126",
+   "group_name": "ECUST荒野乱斗",
+   "description": "荒野乱斗/黄叶绿豆",
+   "member_count": 68,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1019609774",
+   "group_name": "瑞典蠢驴dlc交流群",
+   "description": "Paradox/P社/天际线/钢铁雄心/Hearts of Iron/HOI",
+   "member_count": 20,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "639366489",
+   "group_name": "华理Valorant",
+   "description": "瓦罗兰特/Valorant",
+   "member_count": 934,
+   "max_member_count": 1000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1054786544",
+   "group_name": "真理部伊卡斯特分部",
+   "description": "绝地潜兵/Helldivers/HD",
+   "member_count": 8,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "547764191",
+   "group_name": "华理东方群",
+   "description": "东方/车万/Touhou/Touhou Project",
+   "member_count": 339,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "342069836",
+   "group_name": "花梨第五人格交流群",
+   "description": "第五人格",
+   "member_count": 167,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "870604036",
+   "group_name": "乌冬理工才气学院",
+   "description": "影之诗/影之诗超凡世界/shadowverse/szbbyd",
+   "member_count": 69,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "191017075",
+   "group_name": "花梨doro培育基地",
+   "description": "妮姬/胜利女神新的希望/NIKKE",
+   "member_count": 13,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "810966180",
+   "group_name": "PUNISHING ECUST高维观测中心",
+   "description": "战双帕弥什",
+   "member_count": 0,
+   "max_member_count": 0,
+   "url": null,
+   "trusted": false
+  },
+  {
+   "group_id": "516089476",
+   "group_name": "华理PS同好会",
+   "description": "PS5",
+   "member_count": 11,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "368716541",
+   "group_name": "伊卡斯特龙历院",
+   "description": "怪物猎人/怪猎/Monster Hunter/MH",
+   "member_count": 203,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "648161951",
+   "group_name": "花梨galgame 轮回の二周目~",
+   "description": "galgame/视觉小说/旮旯",
+   "member_count": 258,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "850595521",
+   "group_name": "乌冬脑啡肽供应商",
+   "description": "月亮计划/Moon Project",
+   "member_count": 59,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1039697998",
+   "group_name": "花梨玩战雷的，出列",
+   "description": "战争雷霆/战雷/War Thunder/WT",
+   "member_count": 9,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1062108686",
+   "group_name": "华理少女前线/雪松/等小众游戏综合",
+   "description": "少女前线/灰烬/雪松",
+   "member_count": 18,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1046261239",
+   "group_name": "ECUST终极角逐备战室",
+   "description": "终极角逐/The Finals/最终时刻/TFboys",
+   "member_count": 1,
+   "max_member_count": 100,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1080673496",
+   "group_name": "华理暴雪娱乐7基地-我必凯旋",
+   "description": "暴雪",
+   "member_count": 52,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "753683104",
+   "group_name": "🌸🍐👋🤓村",
+   "description": "火影忍者手游",
+   "member_count": 161,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1106171297",
+   "group_name": "地平线6跑车群doge",
+   "description": "地平线6/赛车/Froza/半拟真半娱乐/拍照",
+   "member_count": 16,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "470337960",
+   "group_name": "华理paradox同好群",
+   "description": "paradox/P社",
+   "member_count": 102,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "694580415",
+   "group_name": "花梨赛博征兵办",
+   "description": "战争雷霆/Warthunder",
+   "member_count": 38,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "912148442",
+   "group_name": "🌸🍐的小加加",
+   "description": "碧蓝航线/碧蓝/blhx/Azue Lane/AL/Al",
+   "member_count": 49,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1021735211",
+   "group_name": "火影忍者手游-华东理工大学群",
+   "description": "火影忍者手游",
+   "member_count": 7,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "637439078",
+   "group_name": "华理王者万象棋",
+   "description": "王者万象棋",
+   "member_count": 0,
+   "max_member_count": 0,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "224259851",
+   "group_name": "华东理工胜者为王区聚集地",
+   "description": "三角洲行动/胜者为王",
+   "member_count": 70,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "922527299",
+   "group_name": "VR俱乐部-2025！",
+   "description": "VR 俱乐部",
+   "member_count": 443,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1142352205",
+   "group_name": "华理创客空间",
+   "description": "华理创客空间",
+   "member_count": 408,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "599611214",
+   "group_name": "伊卡斯特皇家理工骑士团",
+   "description": "伊卡斯特骑士团",
+   "member_count": 136,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "691245130",
+   "group_name": "25华理车协",
+   "description": "自行车协会",
+   "member_count": 322,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "318771884",
+   "group_name": "华理汽协2025",
+   "description": "汽车协会/汽协",
+   "member_count": 307,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "783973040",
+   "group_name": "欢语笑林相声社秋招群(也可以是观众群)",
+   "description": "相声社",
+   "member_count": 299,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "805516338",
+   "group_name": "异度漫协&日之韵2025",
+   "description": "异度漫协/日之韵/动漫社（百团大战前仅接收25新生）",
+   "member_count": 871,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "775128313",
+   "group_name": "华理推理社2025届迎新群",
+   "description": "华理推理社（血染钟楼/剧本杀/狼人杀/立直麻将/三国杀/染·钟楼谜团）",
+   "member_count": 496,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "810562752",
+   "group_name": "CIC丨学术交流丨少闲聊，多学习",
+   "description": "CIC 学习交流",
+   "member_count": 225,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "866917340",
+   "group_name": "华理北京迎新群",
+   "description": "北京",
+   "member_count": 28,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "141051938",
+   "group_name": "华东理工天津老乡群",
+   "description": "天津",
+   "member_count": 415,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "747525205",
+   "group_name": "华东理工河北老乡群",
+   "description": "河北",
+   "member_count": 1264,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "432234523",
+   "group_name": "华理辽宁群",
+   "description": "辽宁",
+   "member_count": 494,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "330117479",
+   "group_name": "华理吉林同乡会",
+   "description": "吉林",
+   "member_count": 484,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "54565490",
+   "group_name": "龙之骄子",
+   "description": "黑龙江",
+   "member_count": 554,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "734826683",
+   "group_name": "华理江苏茶茶群",
+   "description": "江苏",
+   "member_count": 1220,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "794728461",
+   "group_name": "浙里的山路23湾 | 注意保暖",
+   "description": "浙江",
+   "member_count": 405,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "391466610",
+   "group_name": "华理安徽一家人",
+   "description": "安徽",
+   "member_count": 1931,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "868121481",
+   "group_name": "华理山东老乡会2025",
+   "description": "山东",
+   "member_count": 730,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "928113034",
+   "group_name": "一片冰心在豫沪<$ǿĀD\u000e>（华理河南老乡群）",
+   "description": "河南",
+   "member_count": 890,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "231962770",
+   "group_name": "华理湖北老乡群",
+   "description": "湖北",
+   "member_count": 1058,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "743399952",
+   "group_name": "华理2023级湖南同乡新生群",
+   "description": "湖南",
+   "member_count": 197,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "106195152",
+   "group_name": "华东理工“川”流不息",
+   "description": "四川",
+   "member_count": 1332,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "179761360",
+   "group_name": "华理贵州老乡会",
+   "description": "贵州",
+   "member_count": 894,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "739821317",
+   "group_name": "～彩云之滇华理～",
+   "description": "云南",
+   "member_count": 496,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "452096779",
+   "group_name": "华理陕西老乡群",
+   "description": "陕西",
+   "member_count": 875,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "639380166",
+   "group_name": "2024华理甘肃老乡群",
+   "description": "甘肃",
+   "member_count": 281,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "126199521",
+   "group_name": "华理青海同乡会",
+   "description": "青海",
+   "member_count": 214,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "86640877",
+   "group_name": "华东理工大学宁夏同乡",
+   "description": "宁夏",
+   "member_count": 245,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "814698028",
+   "group_name": "华理新疆",
+   "description": "新疆",
+   "member_count": 590,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1046572290",
+   "group_name": "2025华理上海本地新生群",
+   "description": "上海",
+   "member_count": 663,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "885913717",
+   "group_name": "江苏群扬州分群",
+   "description": "扬州",
+   "member_count": 26,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "710588981",
+   "group_name": "流落华理南通人",
+   "description": "南通",
+   "member_count": 202,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "835117414",
+   "group_name": "华理无锡2025元气群",
+   "description": "无锡",
+   "member_count": 78,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "236892914",
+   "group_name": "2024华理山西老乡群",
+   "description": "山西",
+   "member_count": 689,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1049618835",
+   "group_name": "华理25级江西同乡群",
+   "description": "江西/赣",
+   "member_count": 499,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "906155743",
+   "group_name": "2025华理福建同乡群",
+   "description": "福建",
+   "member_count": 490,
+   "max_member_count": 2000,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "872378223",
+   "group_name": "花梨徐州老乡群😜",
+   "description": "徐州",
+   "member_count": 38,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "262963369",
+   "group_name": "华理镇江群",
+   "description": "镇江",
+   "member_count": 9,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "873466335",
+   "group_name": "华理南京群",
+   "description": "南京",
+   "member_count": 37,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "872615292",
+   "group_name": "🌸🍐盐城终极派对",
+   "description": "盐城",
+   "member_count": 36,
+   "max_member_count": 200,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "564818471",
+   "group_name": "2026华理上海本地新生群",
+   "description": "上海/沪/申",
+   "member_count": 182,
+   "max_member_count": 1500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1050907370",
+   "group_name": "华东理工大学化学与分子工程学院2025级新生群",
+   "description": "化学与分子工程学院/花园",
+   "member_count": 441,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  },
+  {
+   "group_id": "1049938302",
+   "group_name": "华东理工大学化工院2025迎新群",
+   "description": "化工学院迎新群",
+   "member_count": 299,
+   "max_member_count": 500,
+   "url": null,
+   "trusted": true
+  }
+ ]
+}
