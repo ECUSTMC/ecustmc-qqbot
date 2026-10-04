@@ -53,8 +53,13 @@ _SYSTEM_PROMPT = """你在给华东理工大学 ECUSTMC 社团 QQ 机器人做�
    - 如果用户同时还在问校园里的事（"计算机专业怎么样""计算机保研难吗"）→ 再加上 query_kb=true
    - 搜到的群明显对不上用户的问题（比如问"宿舍几点熄灯"却搜出个游戏群）→ send_group=false
 ② 没搜到群
-   - 问的是华理校园里的事（转专业、宿舍、食堂、军训、报到、绩点、奖学金、医保、
-     校车、校园卡、图书馆、选课、专业介绍…）→ query_kb=true
+   - 问的是华理校园里的事 → query_kb=true。包括：
+     学业（转专业、保研、绩点、选课、考试、毕业…）、后勤（宿舍、食堂、军训、
+     报到、校车、校园卡、图书馆…）、资助（奖学金、助学金、医保报销…）、
+     网络与信息服务（如何上网、校园网/无线网络/宿舍网络、信息服务、信息门户、
+     一站式平台、VPN、邮箱、云盘、报修…）、
+     各类账号与初始密码（统一身份认证、学号、邮箱、校园网账号的初始密码/激活/
+     忘记密码/重置…）
    - 其它（闲聊、天气、算术、游戏攻略、与学校无关的问题）→ 两个都 false
 
 只输出 JSON，不要 markdown 代码块，不要解释。"""
@@ -177,7 +182,9 @@ def heuristic_decide(user_input: str, group_result: dict) -> dict:
     if matched and intent.is_bare_keyword(user_input):
         # "王者荣耀"/"三角洲" 这类裸词：群表里有就发群，不去打扰知识库
         return {"send_group": True, "query_kb": False, "reason": "规则：裸词命中群表"}
-    if intent.looks_like_question(user_input):
+    if intent.looks_like_question(user_input) or intent.is_campus_topic(user_input):
+        # 像提问，或命中「校园事」关键词（"如何上网""信息服务""初始密码"这类
+        # 没疑问词又不满 7 个字的说法）→ 查知识库
         return {"send_group": False, "query_kb": True, "reason": "规则：像是校园提问"}
     return {"send_group": False, "query_kb": False, "reason": "规则：交给 AI 对话"}
 

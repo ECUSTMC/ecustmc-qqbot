@@ -977,6 +977,17 @@ def test_router_parsing_and_rules():
     assert router.heuristic_decide("有没有计算机群", {"matched": []})["send_group"] is True
     kb = router.heuristic_decide("转专业怎么申请", {"matched": matched})
     assert kb["query_kb"] is True and kb["send_group"] is False, kb
+    # 「校园事」关键词：这些说法没有疑问词、也不满 7 个字，只靠 looks_like_question
+    # 会被当成闲聊交给 AI，必须靠 is_campus_topic 捞回知识库
+    for text in ("如何上网", "信息服务", "初始密码", "校园网账号", "统一身份认证", "校园卡激活"):
+        assert intent.is_campus_topic(text), text
+        rule = router.heuristic_decide(text, {"matched": []})
+        assert rule["query_kb"] is True and rule["send_group"] is False, (text, rule)
+    for text in ("今天天气怎么样", "1+1", "原神"):
+        assert not intent.is_campus_topic(text), text
+    # 提示词里的「校园事」清单要覆盖网络/信息服务与账号密码
+    for word in ("如何上网", "信息服务", "初始密码", "统一身份认证"):
+        assert word in router._SYSTEM_PROMPT, word
     # 有疑问词 → 先按校园提问处理；知识库没收录时再由 answer_school_question 交给 AI 对话
     weather = router.heuristic_decide("今天天气怎么样", {"matched": []})
     assert weather["query_kb"] is True, weather
