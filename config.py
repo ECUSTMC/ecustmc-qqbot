@@ -25,11 +25,9 @@ FEISHU_APP_SECRET = r.feishu_app_secret
 ECUST_MODEL = r.ecust_model
 
 # AI模型配置字典 - 支持不同模型使用不同的API设置
+# 注：早期还有一套独立的 "clawdbot" 配置（另一个网关、模型名写死 clawdbot），
+# 那个模型早已下线（newapi 上不存在，调用必 503），现已全部改用 ECUST_MODEL。
 MODEL_CONFIGS = {
-    "clawdbot": {
-        "api_key": r.clawdbot_api_key, 
-        "base_url": r.clawdbot_url
-    },
     "auto": {
         "api_key": r.ecust_api_key,
         "base_url": r.ecust_url

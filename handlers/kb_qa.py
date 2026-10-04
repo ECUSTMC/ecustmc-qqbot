@@ -403,8 +403,9 @@ async def answer_school_question(
 async def handle_default_reply(api: BotAPI, message, ai_chat=None) -> bool:
     """默认 @（及私聊）的兜底路由：先搜群，再由大模型决定发群结果还是查知识库
 
-    :param ai_chat: 可选的 AI 兜底协程（群聊传 group_chat_with_clawdbot，
-        私聊传 direct_chat_with_clawdbot），仅在知识库不可用时使用
+    :param ai_chat: 可选的 AI 兜底协程（群聊传 group_chat_fallback，
+        私聊传 direct_chat_fallback，两者都用 ECUST_MODEL），
+        仅在「既不发群也不查知识库」以及知识库不可用时使用
     :return: True 表示已经回复过用户（调用方不要再兜底）
     """
     text = (getattr(message, "content", "") or "").strip()

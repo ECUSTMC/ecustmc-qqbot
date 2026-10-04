@@ -5,6 +5,7 @@
 - [默认 @ 机器人：先搜群，再决定「发群 / 查知识库 / 走 AI 对话」](#默认--机器人先搜群再决定发群--查知识库--走-ai-对话)
   - [只发「可信」的群](#只发可信的群)
   - [知识库的配图：直接内嵌在 markdown 卡片里](#知识库的配图直接内嵌在-markdown-卡片里)
+  - [第三分支的 AI 对话用哪个模型（clawdbot 已删除）](#第三分支的ai-对话用哪个模型clawdbot-已删除)
   - [路由模型与「内外网两个 newapi」](#路由模型与内外网两个-newapi)
   - [找群匹配：关键词怎么来、怎么算命中](#找群匹配关键词怎么来怎么算命中)
   - [知识范围锁死在「苏群新生指南」](#知识范围锁死在苏群新生指南)
@@ -66,6 +67,38 @@
 
 > 第三分支依赖已有的 AI 对话，需要在 `.env` 里开 `AI_GROUP_ENABLED=true`
 > （私聊还要 `AI_DIRECT_ENABLED=true`），否则退化成一句功能提示。
+
+### 第三分支的 AI 对话用哪个模型（clawdbot 已删除）
+
+「既不是找群也不是校园问题」时走 `handlers/ai.py::group_chat_fallback`
+（私聊 `direct_chat_fallback`），它们请求的就是 **`ECUST_MODEL`**（`.env` 里现在填的 `hy3`），
+和 `/ai` 命令完全同一条路。
+
+这里踩过一个坑：这两个函数原来叫 `group_chat_with_clawdbot` / `direct_chat_with_clawdbot`，
+**写死**请求一个名叫 `clawdbot` 的模型（配置来自 `CLAWDBOT_URL` / `CLAWDBOT_API_Key`）。
+但那个模型早已下线 —— `CLAWDBOT_URL` 被指到了和 `ECUST_URL` 同一个 newapi
+（`http://newapi.ecustvr.top/v1`），而那台 newapi 的模型列表里**没有 `clawdbot`**：
+
+```
+@ECUSTMC 今天天气
+→ 调用 clawdbot 模型时出错: Error code: 503 - model_not_found:
+  No available channel for model clawdbot under group default (distributor)
+```
+
+以前 `AI_GROUP_ENABLED=false`，默认 @ 的兜底是找群、根本走不到 AI，所以这个坑一直没暴露。
+现在整套 `clawdbot` 已经删掉：`MODEL_CONFIGS` 里不再有它，`r.py` 不再读那两个环境变量，
+群聊/私聊与 `/ai` 一律用 `ECUST_MODEL`。
+
+顺带修了两个体验问题：
+
+* **失败不再把原始报错甩给群友**。`_call_ai_model` 现在返回 True/False
+  （True = 已经给用户一个可见结果），并新增 `report_errors` 参数：
+  `/ai` 这种显式命令仍然回「调用 X 模型时出错: …」方便排查，
+  默认 @ 的隐式兜底传 `report_errors=False`，静默返回 False 后由兜底逻辑回一句正常话术。
+* **输出审查（敏感信息检测）不再和模型名绑死**。原来写成 `if model_name == "clawdbot"`，
+  等于这个安全审查只在那条 503 的死路上生效；现在改为只看 `audit_output` 开关，
+  **默认关闭**（它每次都要额外调一次模型，而 `/ai` 从来就没审查过），
+  需要时给 `_call_ai_model(..., audit_output=True)` 即可。
 
 ### 只发「可信」的群
 
@@ -255,6 +288,9 @@ AI_DIRECT_ENABLED=true
   卡片长度只按纯文字算，图片标记不会被截断。
 * 知识库只覆盖学校的事：**没收录**时会交给已有的 `/ai` 对话（配了 `AI_GROUP_ENABLED` 时），
   所以"今天天气怎么样"最终也能答上来，而不是只回一句"没找到"。
+* 看到 `调用 clawdbot 模型时出错: 503 … model_not_found` 的话，那是历史遗留
+  （`clawdbot` 模型早已下线），现在整套已删除，见上文
+  [第三分支的 AI 对话用哪个模型](#第三分支的ai-对话用哪个模型clawdbot-已删除)。
 * 飞书群表有 5 分钟缓存（`handlers/group_management.py::_GROUPS_CACHE_TTL`），
   所以「先搜一遍群」几乎不增加耗时（实测首次 2.2s、命中缓存 0.00s）。
 

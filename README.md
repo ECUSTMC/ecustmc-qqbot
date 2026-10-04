@@ -75,17 +75,18 @@ ecustmc-qqbot/
    pip install -r requirements.txt
    ```
 
-2. 配置 `.env`（可参考 `.env.example`，变量名见 `r.py`）：
+2. 配置 `.env`（可参考 `.env.example`，变量名以 `r.py` 为准）：
 
-   - `appid` / `secret`：QQ 机器人凭据
-   - `weather_api_token`：高德天气 API Key
-   - `api_app_id` / `api_app_secret`：黄历 API 凭据
-   - `mc_servers`：MC 服务器地址列表（逗号分隔）
-   - `mc_server` / `mc_rcon_port` / `mc_rcon_password`：RCON 配置
-   - `mcvote_api_url` / `mcvote_api_token`：整合包投票 API 配置
-   - `baidu_api_key`：AI 对话 API Key
-   - `LEXIANG_APP_KEY` / `LEXIANG_APP_SECRET`：腾讯乐享知识库凭据（校园问答）
-   - `LEXIANG_TARGETS` / `CAMPUS_QA_ENABLED` / `ROUTER_*`：校园问答与路由模型，见 [ADVANCED.md](ADVANCED.md#校园问答配置项)
+   - `QQBOT_APP_ID` / `QQBOT_APP_SECRET`：QQ 机器人凭据
+   - `WEATHER_API_TOKEN`：高德天气 API Key
+   - `API_APP_ID` / `API_APP_SECRET`：黄历 API 凭据
+   - `ECUST_API_Key` / `ECUST_URL` / `ECUST_MODEL`：AI 对话（`/ai`，以及默认 @ 的 AI 兜底）
+   - `MC_SERVERS`：MC 服务器地址列表（逗号分隔）
+   - `MC_SERVER` / `MC_RCON_PORT` / `MC_KEY`：RCON 配置
+   - `MCVOTE_API_URL` / `MCVOTE_API_TOKEN`：整合包投票 API 配置
+   - `FEISHU_APP_ID` / `FEISHU_APP_SECRET`：飞书群表（找群）
+   - `LEXIANG_APP_KEY` / `LEXIANG_APP_SECRET` / `LEXIANG_TARGETS` / `CAMPUS_QA_ENABLED`：校园问答（乐享知识库）
+   - `ROUTER_API_KEY` / `ROUTER_URL` / `ROUTER_MODEL` / `AI_GROUP_ENABLED` / `AI_DIRECT_ENABLED`：默认 @ 的兜底路由，见 [ADVANCED.md](ADVANCED.md#校园问答配置项)
 
 ## 启动方式
 

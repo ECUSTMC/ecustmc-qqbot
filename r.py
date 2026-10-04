@@ -63,13 +63,8 @@ if ecust_url is None:
 
 ecust_model = os.getenv("ECUST_MODEL", "MiniMax-M2.5")
 
-clawdbot_url = os.getenv("CLAWDBOT_URL")
-if clawdbot_url is None:
-    raise Exception('Missing "CLAWDBOT_URL" environment variable for your bot CLAWDBOT_URL')
-
-clawdbot_api_key = os.getenv("CLAWDBOT_API_Key")
-if clawdbot_api_key is None:
-    raise Exception('Missing "CLAWDBOT_API_Key" environment variable for your bot CLAWDBOT_API_Key')
+# 注：早期还有 CLAWDBOT_URL / CLAWDBOT_API_Key 指向另一个网关（模型名写死 clawdbot），
+# 那个模型早已下线（newapi 上不存在，调用必 503），相关配置已删除，一律走 ECUST_*。
 
 tjit_key= os.getenv("TJIT_KEY")
 if tjit_key is None:

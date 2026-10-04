@@ -192,8 +192,16 @@ def _replace_domains(text: str) -> str:
     return text
 
 
-async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage, include_reasoning: bool = False, user_id: str = None, audit_output: bool = True, image_urls: list = None):
-    """调用AI模型的通用函数"""
+async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage, include_reasoning: bool = False, user_id: str = None, audit_output: bool = False, image_urls: list = None, report_errors: bool = True) -> bool:
+    """调用AI模型的通用函数
+
+    :param audit_output: 是否对模型输出做敏感信息审查（会额外调用一次模型，默认关闭）
+    :param report_errors: 调用失败时是否把原始报错回复给用户。
+        显式命令（/ai）保持 True，让用户看到失败原因；
+        「默认 @ 的 AI 兜底」传 False，由兜底逻辑回一句正常话术，不把 503 原文甩给群友。
+    :return: True 表示已经给用户一个可见结果（成功 / 被审查拦截 / 已回复报错），
+        调用方不必再兜底；False 表示静默失败，调用方应自行兜底。
+    """
     try:
         # 获取模型配置
         config = MODEL_CONFIGS.get(model_name, {})
@@ -202,7 +210,7 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
         
         if not api_key or not base_url:
             await message.reply(content=f"模型 {model_name} 的API配置不完整")
-            return
+            return True
         
         # 使用配置的API设置初始化客户端
         client = OpenAI(api_key=api_key, base_url=base_url)
@@ -237,9 +245,10 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
             model_reasoning_content = getattr(message_obj, 'reasoning_content', None)
             model_response = getattr(message_obj, 'content', '')
 
-            # 先对原始内容进行审查（未替换域名），仅当模型为 clawdbot 且 audit_output 为 True 时进行审查
+            # 输出审查（默认关闭）：只看 audit_output，不再按模型名判断 ——
+            # 原来写成 model_name == "clawdbot"，等于把审查和某个已废弃的模型绑死
             unsafe = False
-            if audit_output and model_name == "clawdbot":
+            if audit_output:
                 if model_reasoning_content:
                     if not await _ai_safety_check(model_reasoning_content):
                         unsafe = True
@@ -249,7 +258,7 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
 
             if unsafe:
                 await message.reply(content="🚫 模型生成的内容被检测为不安全，已阻止发送。")
-                return
+                return True
 
             # 对推理内容和回复内容中的网址进行替换并发送
             if model_reasoning_content:
@@ -267,11 +276,11 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
         else:
             model_response = completion.choices[0].message.content
 
-            # 输出审查：仅针对 clawdbot 执行审查
-            if audit_output and model_name == "clawdbot":
+            # 输出审查（默认关闭）：同样只看 audit_output
+            if audit_output:
                 if not await _ai_safety_check(model_response):
                     await message.reply(content="🚫 模型生成的内容被检测为不安全，已阻止发送。")
-                    return
+                    return True
 
             # 对回复内容中的网址进行替换
             model_response = _replace_domains(model_response)
@@ -280,9 +289,15 @@ async def _call_ai_model(model_name: str, user_input: str, message: GroupMessage
             markdown = MarkdownPayload(content=reply_md)
             await message.reply(markdown=markdown, msg_type=2)
 
+        return True
+
     except Exception as e:
-        # 错误处理
-        await message.reply(content=f"调用 {model_name} 模型时出错: {str(e)}")
+        # 错误处理：显式命令把原因回给用户；隐式兜底只记日志，交给调用方回复
+        _log.error(f"调用 {model_name} 模型失败: {type(e).__name__}: {str(e)}")
+        if report_errors:
+            await message.reply(content=f"调用 {model_name} 模型时出错: {str(e)}")
+            return True
+        return False
 
 
 def _extract_image_urls(message) -> list:
@@ -303,8 +318,12 @@ def _extract_image_urls(message) -> list:
     return image_urls
 
 
-async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
-    """群组调用 clawdbot 模型"""
+async def group_chat_fallback(api: BotAPI, message: GroupMessage) -> bool:
+    """群聊 AI 兜底对话：用 ECUST_MODEL（和 /ai 同一个模型）
+
+    供「默认 @ 的兜底路由」第三分支调用。失败时不把原始报错甩给群友，
+    返回 False 让兜底逻辑回一句正常话术。
+    """
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
     
     # 检查敏感关键词
@@ -314,18 +333,18 @@ async def group_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
     
     user_id = _extract_user_id(message)
     image_urls = _extract_image_urls(message)
-    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id, image_urls=image_urls)
-    return True
+    return await _call_ai_model(config.ECUST_MODEL, user_input, message, include_reasoning=False,
+                                user_id=user_id, image_urls=image_urls, report_errors=False)
 
 
-async def direct_chat_with_clawdbot(api: BotAPI, message: GroupMessage):
-    """私聊调用 clawdbot 模型"""
+async def direct_chat_fallback(api: BotAPI, message: GroupMessage) -> bool:
+    """私聊 AI 兜底对话：用 ECUST_MODEL（和 /ai 同一个模型）"""
     user_input = message.content.strip() if hasattr(message, 'content') else "你好"
     
     user_id = _extract_user_id(message)
     image_urls = _extract_image_urls(message)
-    await _call_ai_model("clawdbot", user_input, message, include_reasoning=False, user_id=user_id, audit_output=False, image_urls=image_urls)
-    return True
+    return await _call_ai_model(config.ECUST_MODEL, user_input, message, include_reasoning=False,
+                                user_id=user_id, image_urls=image_urls, report_errors=False)
 
 
 @Commands("/ai")

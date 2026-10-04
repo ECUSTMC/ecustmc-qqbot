@@ -13,7 +13,7 @@ from handlers.daily import daily_word, daily_huangli, daily_notice
 from handlers.fortune import jrys, jrrp, query_tarot, query_divinatory_symbol
 from handlers.help import help, wiki
 from handlers.entertainment import query_vv, query_deltaforce_password
-from handlers.ai import chat_with_deepseek, switch_model, list_models, direct_chat_with_clawdbot, group_chat_with_clawdbot
+from handlers.ai import chat_with_deepseek, switch_model, list_models, direct_chat_fallback, group_chat_fallback
 from handlers.network_tools import query_ip_info, query_domain_info, ping_info
 from handlers.minecraft import query_mc_command, MC_BUTTON_ACTIONS, execute_mc_command
 from handlers.vote import query_vote
@@ -127,7 +127,8 @@ class EcustmcClient(botpy.Client):
                 return
 
         # 兜底：先判断是不是找群，不是就用知识库回答学校相关问题
-        ai_chat = direct_chat_with_clawdbot if AI_DIRECT_ENABLED else None
+        # 第三分支的 AI 对话用 ECUST_MODEL（和 /ai 同一个模型）
+        ai_chat = direct_chat_fallback if AI_DIRECT_ENABLED else None
         if await handle_default_reply(api=self.api, message=message, ai_chat=ai_chat):
             return
 
@@ -217,8 +218,9 @@ class EcustmcClient(botpy.Client):
             return
 
         # 兜底：先搜一遍群表，再由大模型判断「发群结果」还是「查知识库」；
+        # 都不是则用已有的 AI 对话（ECUST_MODEL）回复；
         # 回复一律走 safe_reply，失败只记日志不抛异常
-        ai_chat = group_chat_with_clawdbot if AI_GROUP_ENABLED else None
+        ai_chat = group_chat_fallback if AI_GROUP_ENABLED else None
         try:
             if await handle_default_reply(api=self.api, message=message, ai_chat=ai_chat):
                 return

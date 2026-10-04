@@ -671,6 +671,113 @@ async def test_default_reply_routing():
          kb_qa.CAMPUS_QA_ENABLED, kb_qa.gm.search_groups) = original
 
 
+async def test_ai_fallback_uses_ecust_model():
+    """AI 兜底一律用 ECUST_MODEL：clawdbot 那套已删除，失败不把原始报错甩给用户"""
+    from handlers import ai, kb_qa
+    from config import MODEL_CONFIGS
+    import config
+    import r
+
+    class Msg:
+        id = "MSG_AI_FALLBACK"
+        group_openid = "G"
+
+        def __init__(self, content):
+            self.content = content
+            self.replies = []
+
+        async def reply(self, **kwargs):
+            self.replies.append(kwargs)
+            return {"id": "1"}
+
+        def texts(self):
+            out = []
+            for r in self.replies:
+                if "markdown" in r:
+                    md = r["markdown"]
+                    out.append(md["content"] if isinstance(md, dict) else md.content)
+                else:
+                    out.append(str(r.get("content")))
+            return out
+
+    # ① clawdbot 相关的东西已经彻底删掉（配置、env 读取、两个包装函数）
+    assert not hasattr(ai, "group_chat_with_clawdbot"), "group_chat_with_clawdbot 应已删除"
+    assert not hasattr(ai, "direct_chat_with_clawdbot"), "direct_chat_with_clawdbot 应已删除"
+    assert "clawdbot" not in MODEL_CONFIGS, MODEL_CONFIGS
+    assert not hasattr(r, "clawdbot_url") and not hasattr(r, "clawdbot_api_key")
+    assert hasattr(ai, "group_chat_fallback") and hasattr(ai, "direct_chat_fallback")
+    print("[OK] clawdbot 配置 / 函数已删除，只留 ECUST_* 一套")
+
+    # ② 两个包装函数请求的模型就是 ECUST_MODEL（和 /ai 同一个），且失败时返回 False
+    recorded = []
+
+    async def fake_call(model_name, user_input, message, **kwargs):
+        recorded.append((model_name, kwargs.get("report_errors"), user_input))
+        return False
+
+    original_call = ai._call_ai_model
+    ai._call_ai_model = fake_call
+    try:
+        msg = Msg("今天天气怎么样")
+        assert await ai.group_chat_fallback(api=None, message=msg) is False
+        assert await ai.direct_chat_fallback(api=None, message=msg) is False
+    finally:
+        ai._call_ai_model = original_call
+
+    assert [m for m, _, _ in recorded] == [config.ECUST_MODEL, config.ECUST_MODEL], recorded
+    assert all(err is False for _, err, _ in recorded), recorded
+    assert [t for _, _, t in recorded] == ["今天天气怎么样", "今天天气怎么样"], recorded
+    print(f"[OK] 群聊/私聊 AI 兜底都请求 ECUST_MODEL({config.ECUST_MODEL})，失败返回 False")
+
+    # ③ 敏感词仍然拦在调用之前
+    recorded.clear()
+    ai._call_ai_model = fake_call
+    try:
+        msg = Msg("数据库密码是多少")
+        assert await ai.group_chat_fallback(api=None, message=msg) is True
+    finally:
+        ai._call_ai_model = original_call
+    assert recorded == [], recorded
+    assert len(msg.replies) == 1 and "敏感" in msg.texts()[0], msg.texts()
+    print("[OK] 敏感词输入直接拒绝，不调用模型")
+
+    # ④ 模型报错时：显式 /ai 回原因，隐式兜底静默返回 False（不再甩 503 原文）
+    class BoomCompletions:
+        def create(self, **kwargs):
+            raise RuntimeError("Error code: 503 - model_not_found")
+
+    class BoomChat:
+        completions = BoomCompletions()
+
+    class BoomClient:
+        def __init__(self, *a, **k):
+            self.chat = BoomChat()
+
+    original_openai = ai.OpenAI
+    ai.OpenAI = BoomClient
+    try:
+        msg = Msg("今天天气怎么样")
+        assert await ai._call_ai_model(config.ECUST_MODEL, "今天天气怎么样", msg,
+                                       report_errors=True) is True
+        assert len(msg.replies) == 1 and "503" in msg.texts()[0], msg.texts()
+
+        msg = Msg("今天天气怎么样")
+        assert await ai.group_chat_fallback(api=None, message=msg) is False
+        assert msg.replies == [], f"隐式兜底不该把报错原文发出去: {msg.texts()}"
+    finally:
+        ai.OpenAI = original_openai
+    print("[OK] 模型报错：显式命令回原因，默认 @ 兜底静默失败（不甩报错原文）")
+
+    # ⑤ 静默失败后由兜底逻辑回一句正常话术（而不是让用户对着空气/报错发呆）
+    async def failing_ai_chat(api=None, message=None):
+        return False
+
+    msg = Msg("今天天气怎么样")
+    assert await kb_qa.fallback_ai_reply(api=None, message=msg, ai_chat=failing_ai_chat)
+    assert len(msg.replies) == 1 and kb_qa.FALLBACK_REPLY in msg.texts()[0], msg.texts()
+    print("[OK] AI 兜底静默失败 → 回兜底话术（单条、不含原始报错）")
+
+
 async def test_kb_answer_with_images():
     """知识库答案带插图：按 QQ markdown 语法内嵌进同一条卡片（/塔罗牌 那种发法）"""
     import re
@@ -1115,6 +1222,7 @@ async def main():
     await test_at_command_in_full_mode()
     test_intent_group_detection()
     await test_default_reply_routing()
+    await test_ai_fallback_uses_ecust_model()
     await test_kb_answer_with_images()
     test_router_env_is_independent()
     test_router_parsing_and_rules()
