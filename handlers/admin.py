@@ -21,7 +21,8 @@ async def show_permissions(api: BotAPI, message: GroupMessage, params=None):
         "## 🔐 指令权限",
         "",
         "- `/model`、`/models`：仅**机器人管理员**（`.env` 的 `ADMIN_OPENIDS`）",
-        "- `/添加服务器`、`/移除服务器`：仅**本群群主 / 管理员**",
+        "- `/添加服务器`、`/移除服务器`：**机器人管理员**或**本群群主 / 管理员**",
+        "- `/mc`（RCON 命令）与「永昼机」按钮：任何人都能用（当前如此，未加限制）",
         "",
         f"- 你的身份：{'机器人管理员 ✅' if is_owner(message) else '非机器人管理员'} / "
         f"{'群主或管理员 ✅' if is_group_admin(message) else '普通成员（或平台未下发身份）'}",

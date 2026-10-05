@@ -10,7 +10,9 @@
   第一次配置：先用 ``/我的id`` 查看自己的 openid，填进 ``ADMIN_OPENIDS`` 后重启。
 * **群主 / 管理员（group admin）**：平台的 ``message.author.member_role``
   （``owner`` / ``admin`` / ``member``）。给 ``/添加服务器``、``/移除服务器``
-  这类会改配置的指令用。取不到身份时按**无权限**处理（fail closed）并打 WARNING，
+  这类会改配置的指令用；这两条是**两级放行**（:func:`require_owner_or_group_admin`）：
+  机器人管理员在哪个群（甚至私聊）都能用，本群群主 / 管理员在本群也能用。
+  取不到身份时按**无权限**处理（fail closed）并打 WARNING，
   避免平台改字段后权限静默失效。
 
 用法（放在 handler 最前面；拒绝时 ``return True`` 终止分发，
@@ -42,6 +44,9 @@ OWNER_HINT = (
     "填进 `.env` 的 `ADMIN_OPENIDS`（逗号分隔）并重启机器人后生效。"
 )
 GROUP_ADMIN_HINT = "🔒 这个指令只有本群群主 / 管理员能用。"
+OWNER_OR_GROUP_ADMIN_HINT = (
+    "🔒 这个指令只有机器人管理员、或本群群主 / 管理员能用。"
+)
 
 
 def identity_ids(message) -> list:
@@ -102,6 +107,23 @@ async def require_group_admin(message, command: str = "") -> bool:
         f"role={member_role(message) or '(平台未下发)'}"
     )
     await safe_reply(message, content=GROUP_ADMIN_HINT)
+    return False
+
+
+async def require_owner_or_group_admin(message, command: str = "") -> bool:
+    """两级放行：机器人管理员（任何场景）**或**本群群主 / 管理员
+
+    给 ``/添加服务器``、``/移除服务器`` 这类群内配置指令用：机器人管理员不必是
+    每个群的群主（私聊也能改），本群群主 / 管理员自己也能维护。
+    """
+    if is_owner(message) or is_group_admin(message):
+        return True
+    _log.warning(
+        f"[权限] 拒绝 {command or '群管理指令'}：身份={identity_ids(message)} "
+        f"role={member_role(message) or '(平台未下发)'} "
+        f"白名单={len(config.ADMIN_OPENIDS or [])} 条"
+    )
+    await safe_reply(message, content=OWNER_OR_GROUP_ADMIN_HINT)
     return False
 
 

@@ -73,9 +73,10 @@ ecustmc-qqbot/
 | 指令 | 谁能用 | 怎么判定 |
 |------|--------|----------|
 | `/model` `/models` | 机器人管理员 | `.env` 的 `ADMIN_OPENIDS`（openid 白名单，逗号分隔） |
-| `/添加服务器` `/移除服务器` | 本群群主 / 管理员 | 平台下发的 `member_role` = `owner`/`admin` |
+| `/添加服务器` `/移除服务器` | 机器人管理员 **或** 本群群主 / 管理员 | 白名单命中，或平台下发的 `member_role` = `owner`/`admin` |
+| `/mc`、「永昼机」按钮 | 所有人（当前未加限制） | —— |
 
-两者都是**取不到身份就拒绝**（fail closed）；`ADMIN_OPENIDS` 留空时管理员指令对所有人都拒绝。
+权限判定都是**取不到身份就拒绝**（fail closed）；`ADMIN_OPENIDS` 留空时管理员指令对所有人都拒绝。
 配置方法：先发 `/我的id` 拿到自己的 openid，填进 `.env` 后重启。详见
 [ADVANCED.md](ADVANCED.md#指令权限谁能用哪些指令)。
 

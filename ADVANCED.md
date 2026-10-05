@@ -455,7 +455,8 @@ python3 selfcheck.py
 | 指令 | 判定方式 | 配置 |
 |------|----------|------|
 | `/model`、`/models` | 「机器人管理员」白名单 | `.env` 的 `ADMIN_OPENIDS`（逗号分隔 openid） |
-| `/添加服务器`、`/移除服务器` | 「本群群主 / 管理员」 | 不用配置，按平台下发的 `member_role` 判定 |
+| `/添加服务器`、`/移除服务器` | **两级放行**：机器人管理员 **或** 本群群主 / 管理员 | 白名单，或平台下发的 `member_role` |
+| `/mc`、「永昼机」按钮 | 任何人（当前刻意不加限制） | —— |
 
 ### 机器人管理员：ADMIN_OPENIDS 白名单
 
@@ -479,25 +480,33 @@ python3 selfcheck.py
 
 - 平台在群消息的 `author.member_role` 里给出 `owner` / `admin` / `member`
   （`utils/group_message_patch.py` 补了这个字段的解析）。
-- **取不到身份就拒绝**（私聊消息没有 `member_role`；平台若没下发也是空）
-  并打 WARNING：`role=(平台未下发)` —— 这是刻意的 fail closed，
+- `/添加服务器`、`/移除服务器` 是**两级放行**（`require_owner_or_group_admin`）：
+  机器人管理员在哪个群甚至私聊都能改（私聊没有 `member_role` 也认），
+  本群群主 / 管理员在本群也能改 —— 群管理自己维护服务器列表，不必都来找你。
+- **取不到身份就拒绝**（平台没下发、或私聊且不在白名单）并打 WARNING：
+  `role=(平台未下发)` —— 这是刻意的 fail closed，
   免得平台改字段后权限静默失效、谁都能改 `.env`。
 - 这两条指令会改写 `.env`（`MC_SERVERS`），所以判定放在 handler 的**第一行**，
   拒绝时立刻 `return True` 终止分发（不返回 True 会继续走默认回复，用户会收到
   第二句莫名其妙的话）。
+- `/mc`（RCON 命令）与「永昼机」按钮**刻意不加限制**（群友想用就用）。
 
 ### 加一条受保护的指令
 
 ```python
-from utils.permissions import require_owner, require_group_admin
+from utils.permissions import (
+    require_owner,                 # 只有机器人管理员
+    require_group_admin,           # 只有本群群主 / 管理员
+    require_owner_or_group_admin,  # 两级放行
+)
 
 @Commands("/危险指令")
 async def dangerous(api, message, params=None):
-    if not await require_owner(message, "/危险指令"):      # 机器人管理员
+    if not await require_owner(message, "/危险指令"):
         return True                                       # 必须 return True
     ...
 ```
 
-两种守卫都会：允许时返回 `True`（继续执行）、拒绝时回一句给用户并返回 `False`。
-附带的 `/权限` 指令会告诉提问者当前两类权限各自的要求以及他自己的身份状态。
+三个守卫都会：允许时返回 `True`（继续执行）、拒绝时回一句给用户并返回 `False`。
+附带的 `/权限` 指令会告诉提问者当前各类指令的要求以及他自己的身份状态。
 

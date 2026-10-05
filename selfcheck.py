@@ -1323,14 +1323,24 @@ async def test_command_permissions():
         api._http.payloads.clear()
         assert not await permissions.require_group_admin(member_msg, "/添加服务器")
         assert len(api._http.payloads) == 1 and "群主 / 管理员" in api._http.payloads[0]["content"]
-        # 私聊取不到 member_role → 按无权限处理，且服务器列表不能被改
+
+        # 服务器增删是两级放行：机器人管理员（私聊没有 member_role 也算）+ 本群群主/管理员
+        assert await permissions.require_owner_or_group_admin(
+            fake_message(msg_id="PERM_OWNER_DM", content="/x", api=api, author_id="01ADMIN"))
+        assert await permissions.require_owner_or_group_admin(admin_msg, "/添加服务器")
+        api._http.payloads.clear()
+        assert not await permissions.require_owner_or_group_admin(member_msg, "/添加服务器")
+        assert len(api._http.payloads) == 1 and "群主 / 管理员" in api._http.payloads[0]["content"]
+        print("[OK] 服务器增删：机器人管理员（含私聊）与本群群主/管理员放行，普通成员被拒")
+
+        # 私聊里的普通成员（取不到 member_role）→ 拒绝，且服务器列表不能被改
         servers_before = r_module.mc_servers
         direct = fake_message(msg_id="PERM_DM", content="/添加服务器 evil.example.com", api=api)
         api._http.payloads.clear()
         assert await server_handler.add_server(api=api, message=direct, params="evil.example.com") is True
         assert r_module.mc_servers == servers_before, r_module.mc_servers
         assert len(api._http.payloads) == 1, api._http.payloads
-        print("[OK] /添加服务器：群主/管理员放行，普通成员与私聊被拒且未改配置")
+        print("[OK] /添加服务器：普通成员与私聊被拒且未改配置")
 
         # /我的id 与 /权限 都能正常回一条
         # 注意 botpy 的 @Commands 是按「content 里含指令名」匹配的（不匹配返回 False），
