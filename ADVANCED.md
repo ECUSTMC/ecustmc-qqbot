@@ -464,17 +464,19 @@ python3 selfcheck.py
   同时打一条 WARNING 日志（`[权限] 拒绝 /model：身份=[...] role=... 白名单=0 条`），
   便于你在线上日志里确认到底是谁在试。
 - **怎么拿到自己的 openid**：发一次 `/我的id`（群里要 @机器人），
-  输出会列出 `union_openid` / `member_openid` / `user_openid` / `id` 和你的群内身份。
+  输出会列出 openid（几个字段同值时归并成一行）和你的群内身份。
   把它填进 `.env`：
 
   ```env
   ADMIN_OPENIDS=01A2B3C4...,01D5E6F7...
   ```
 
-- **为什么优先填 `union_openid`**：群消息里的 `member_openid` 是**按群隔离**的
-  （同一个人在不同群里值不同，因为它是「这个群的这个成员」的标识）；
-  平台下发 `union_openid` 时它跨群稳定。`utils/permissions.py::identity_ids()`
-  会把作者身上这几个字段都拿出来比对（大小写不敏感），所以填哪个都能命中。
+- **一份 id 就够（实测）**：本机器人下同一个用户的
+  `union_openid` / `member_openid` / `id`（群聊）与 `user_openid`（私聊）
+  是**同一个值**，也就是跨群、跨私聊都认这一份。
+  代码里 `identity_ids()` 仍会把四个字段都比对一遍（大小写不敏感），
+  所以哪天平台把它们拆成按群隔离的值也不会漏；真出现不同值时优先用
+  `union_openid`（跨群稳定），或把用到的 id 都列上。
 
 ### 群主 / 管理员：按平台 member_role
 

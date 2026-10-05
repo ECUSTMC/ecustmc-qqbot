@@ -1351,6 +1351,9 @@ async def test_command_permissions():
         assert await my_id_command(api=api, message=me) is True
         text = api._http.payloads[0]["content"]
         assert "01ADMIN" in text and "owner" in text and "ADMIN_OPENIDS" in text, text
+        # 同一个 id 出现在多个字段时只列一行（按值归并）
+        assert text.count("01ADMIN") == 1, text
+        assert "同值" in text, text
         perm_msg = fake_message(msg_id="PERM_SHOW", content="/权限", api=api,
                                 author_id="01ADMIN", member_role="owner")
         assert await show_permissions(api=api, message=perm_msg) is True

@@ -128,7 +128,12 @@ async def require_owner_or_group_admin(message, command: str = "") -> bool:
 
 
 def describe_identity(message) -> str:
-    """``/我的id`` 的正文：列出可用于配置白名单的 id 与群内身份"""
+    """``/我的id`` 的正文：列出可用于配置白名单的 id 与群内身份
+
+    同一用户的几个字段常常是**同一个值**（实测 ``union_openid`` /
+    ``member_openid`` / ``id`` / 私聊 ``user_openid`` 一致），所以按值归并成一行，
+    免得输出三行完全一样的 id。
+    """
     author = getattr(message, "author", None)
     role = member_role(message) or "(平台未下发)"
     is_direct = getattr(message, "group_openid", None) is None
@@ -139,14 +144,21 @@ def describe_identity(message) -> str:
         f"- **群内身份**：`{role}`"
         + ("（群主 / 管理员可用群管理指令）" if is_group_admin(message) else ""),
     ]
+
+    grouped = {}  # 值 → 带这个值的字段名，按出现顺序
     for attr in _ID_ATTRS:
         value = getattr(author, attr, None)
         if value:
-            lines.append(f"- **{attr}**：`{value}`")
+            grouped.setdefault(str(value), []).append(attr)
+    for value, attrs in grouped.items():
+        label = attrs[0] if len(attrs) == 1 else f"{' / '.join(attrs)}（同值）"
+        lines.append(f"- **{label}**：`{value}`")
+
     lines += [
         f"- **机器人管理员**：{'✅ 是' if is_owner(message) else '❌ 否'}",
         "",
-        "配置方法：把上面的 `union_openid`（有就用它，跨群稳定）或 `member_openid`",
-        "填进 `.env` 的 `ADMIN_OPENIDS`（多个用逗号分隔），重启机器人后生效。",
+        "把这行 id 填进 `.env` 的 `ADMIN_OPENIDS`（多个用逗号分隔）并重启即可。",
+        "几个字段通常同值，填一个就够；若哪天出现不同值（平台按群隔离），"
+        "用 `union_openid`（跨群稳定），或把用到的 id 都列上。",
     ]
     return "\n".join(lines)
