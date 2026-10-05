@@ -19,6 +19,10 @@
   - [行为约定](#行为约定)
   - [排障](#排障)
   - [离线自检](#离线自检)
+- [指令权限（谁能用哪些指令）](#指令权限谁能用哪些指令)
+  - [机器人管理员：ADMIN_OPENIDS 白名单](#机器人管理员admin_openids-白名单)
+  - [群主 / 管理员：按平台 member_role](#群主--管理员按平台-member_role)
+  - [加一条受保护的指令](#加一条受保护的指令)
 
 ---
 
@@ -439,4 +443,61 @@ python3 selfcheck.py
 **用真实群表快照（119 个群）验证匹配、校园提问 0 误命中、不可信群搜不出来**、
 **知识库配图：图片头部字节解析宽高 / 尺寸提示缩放 / 内嵌 markdown 卡片 /
 上限与「按纯文字截断」/ LaTeX 转纯文本**、
-**路由配置与 `/model` 解耦**、乐享答案清洗与引用解析、群表 TTL 缓存。
+**路由配置与 `/model` 解耦**、乐享答案清洗与引用解析、群表 TTL 缓存、
+**指令权限（管理员白名单 / 群主管理员判定 / 被拒时未改配置）**。
+
+---
+
+## 指令权限（谁能用哪些指令）
+
+实现在 `utils/permissions.py`，两种判定各管一类指令：
+
+| 指令 | 判定方式 | 配置 |
+|------|----------|------|
+| `/model`、`/models` | 「机器人管理员」白名单 | `.env` 的 `ADMIN_OPENIDS`（逗号分隔 openid） |
+| `/添加服务器`、`/移除服务器` | 「本群群主 / 管理员」 | 不用配置，按平台下发的 `member_role` 判定 |
+
+### 机器人管理员：ADMIN_OPENIDS 白名单
+
+- **留空 = 谁都不是管理员**（fail closed）：管理员指令一律拒绝并回一句说明，
+  同时打一条 WARNING 日志（`[权限] 拒绝 /model：身份=[...] role=... 白名单=0 条`），
+  便于你在线上日志里确认到底是谁在试。
+- **怎么拿到自己的 openid**：发一次 `/我的id`（群里要 @机器人），
+  输出会列出 `union_openid` / `member_openid` / `user_openid` / `id` 和你的群内身份。
+  把它填进 `.env`：
+
+  ```env
+  ADMIN_OPENIDS=01A2B3C4...,01D5E6F7...
+  ```
+
+- **为什么优先填 `union_openid`**：群消息里的 `member_openid` 是**按群隔离**的
+  （同一个人在不同群里值不同，因为它是「这个群的这个成员」的标识）；
+  平台下发 `union_openid` 时它跨群稳定。`utils/permissions.py::identity_ids()`
+  会把作者身上这几个字段都拿出来比对（大小写不敏感），所以填哪个都能命中。
+
+### 群主 / 管理员：按平台 member_role
+
+- 平台在群消息的 `author.member_role` 里给出 `owner` / `admin` / `member`
+  （`utils/group_message_patch.py` 补了这个字段的解析）。
+- **取不到身份就拒绝**（私聊消息没有 `member_role`；平台若没下发也是空）
+  并打 WARNING：`role=(平台未下发)` —— 这是刻意的 fail closed，
+  免得平台改字段后权限静默失效、谁都能改 `.env`。
+- 这两条指令会改写 `.env`（`MC_SERVERS`），所以判定放在 handler 的**第一行**，
+  拒绝时立刻 `return True` 终止分发（不返回 True 会继续走默认回复，用户会收到
+  第二句莫名其妙的话）。
+
+### 加一条受保护的指令
+
+```python
+from utils.permissions import require_owner, require_group_admin
+
+@Commands("/危险指令")
+async def dangerous(api, message, params=None):
+    if not await require_owner(message, "/危险指令"):      # 机器人管理员
+        return True                                       # 必须 return True
+    ...
+```
+
+两种守卫都会：允许时返回 `True`（继续执行）、拒绝时回一句给用户并返回 `False`。
+附带的 `/权限` 指令会告诉提问者当前两类权限各自的要求以及他自己的身份状态。
+

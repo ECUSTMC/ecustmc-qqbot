@@ -20,10 +20,10 @@ async def help(api: BotAPI, message: GroupMessage, params=None):
         "  没有的话再查知识库回答学校的事（转专业、宿舍、军训、食堂…）\n"
         "- 🔍 想找群：@我 说「有没有XX群」，或发送 `/找群 XX`\n"
         "- 📖 想指定查知识库：`/问答 你的问题`\n"
+        "- 🪪 想查看自己的 openid / 群内身份：`/我的id`（管理员指令权限见 `/权限`）\n"
         "- 🔐 发送 /授权 ：查看「开启接收所有消息」的群主授权方法\n\n"
         "祝游戏愉快！"
     )
-    
     markdown = MarkdownPayload(content=help_content)
     await message.reply(markdown=markdown, msg_type=2)
     return True

@@ -11,6 +11,8 @@ from types import SimpleNamespace
 
 from botpy.api import BotAPI
 
+import r as r_module
+from handlers.admin import my_id as my_id_command, show_permissions
 from utils.reply_seq import apply_reply_seq_patch
 from utils import group_trigger
 
@@ -39,11 +41,20 @@ class FakeMsg:
         api=None,
         group_openid="G1",
         author_bot=False,
+        author_id="01A0B219AABBCC",
+        member_role=None,
+        union_openid=None,
+        user_openid=None,
     ):
         self.id = msg_id
         self.content = content
         self.author = SimpleNamespace(
-            id="01A0B219AABBCC", member_openid="01A0B219AABBCC", bot=author_bot
+            id=author_id,
+            member_openid=author_id,
+            bot=author_bot,
+            member_role=member_role,
+            union_openid=union_openid,
+            user_openid=user_openid,
         )
         self.mentions = []
         for item in mentions:
@@ -63,13 +74,14 @@ class FakeMsg:
         )
 
 
-def fake_message(msg_id="MSG_A", content="/帮助", mentions=(), api=None, author_bot=False):
+def fake_message(msg_id="MSG_A", content="/帮助", mentions=(), api=None, author_bot=False, **author_fields):
     return FakeMsg(
         msg_id=msg_id,
         content=content,
         mentions=mentions,
         api=api,
         author_bot=author_bot,
+        **author_fields,
     )
 
 
@@ -1262,6 +1274,83 @@ async def test_full_mode_routing():
          kb_qa.router.decide, kb_qa.CAMPUS_QA_ENABLED, gm.search_groups) = originals
 
 
+async def test_command_permissions():
+    """指令权限：/model|/models 只认 ADMIN_OPENIDS；服务器增删只认群主/管理员"""
+    import config
+    from utils import permissions
+    from handlers import ai as ai_handler
+    from handlers import server as server_handler
+
+    api = make_api()
+    original = config.ADMIN_OPENIDS
+    try:
+        # 白名单为空 → fail closed：连"看起来像管理员"的人也被拒
+        config.ADMIN_OPENIDS = []
+        anyone = fake_message(msg_id="PERM0", content="/model x", api=api, member_role="owner")
+        assert not permissions.is_owner(anyone)
+        assert not await permissions.require_owner(anyone, "/model")
+        assert len(api._http.payloads) == 1 and "只有机器人管理员" in api._http.payloads[0]["content"]
+
+        config.ADMIN_OPENIDS = ["01admin", "01UNION"]
+        # 匹配：member_openid（大小写不敏感）、union_openid、私聊 user_openid
+        assert permissions.is_owner(
+            fake_message(msg_id="PERM1", content="/x", api=api, author_id="01ADMIN"))
+        assert permissions.is_owner(
+            fake_message(msg_id="PERM2", content="/x", api=api, author_id="01OTHER",
+                         union_openid="01union"))
+        assert permissions.is_owner(
+            fake_message(msg_id="PERM3", content="/x", api=api, author_id="01OTHER",
+                         user_openid="01Admin"))
+        assert not permissions.is_owner(
+            fake_message(msg_id="PERM4", content="/x", api=api, author_id="01OTHER"))
+        print("[OK] is_owner：member/union/user openid 都能匹配，且大小写不敏感")
+
+        # 非管理员用 /model：被拒、模型没被改、且回了一条说明（不会静默）
+        before = config.ECUST_MODEL
+        api._http.payloads.clear()
+        assert await ai_handler.switch_model(api=api, message=anyone, params="gpt-should-not-apply") is True
+        assert config.ECUST_MODEL == before, config.ECUST_MODEL
+        assert len(api._http.payloads) == 1, api._http.payloads
+        print("[OK] /model 非管理员：拒绝并说明，模型未被改写")
+
+        # 群主 / 管理员判定（owner / admin 可用，member / 取不到都不可用）
+        for role, expected in (("owner", True), ("admin", True), ("member", False), (None, False)):
+            msg = fake_message(msg_id=f"PERM_ROLE_{role}", content="/x", api=api, member_role=role)
+            assert permissions.is_group_admin(msg) is expected, role
+        admin_msg = fake_message(msg_id="PERM_ADMIN", content="/添加服务器 x", api=api, member_role="admin")
+        assert await permissions.require_group_admin(admin_msg, "/添加服务器")
+        member_msg = fake_message(msg_id="PERM_MEMBER", content="/添加服务器 x", api=api, member_role="member")
+        api._http.payloads.clear()
+        assert not await permissions.require_group_admin(member_msg, "/添加服务器")
+        assert len(api._http.payloads) == 1 and "群主 / 管理员" in api._http.payloads[0]["content"]
+        # 私聊取不到 member_role → 按无权限处理，且服务器列表不能被改
+        servers_before = r_module.mc_servers
+        direct = fake_message(msg_id="PERM_DM", content="/添加服务器 evil.example.com", api=api)
+        api._http.payloads.clear()
+        assert await server_handler.add_server(api=api, message=direct, params="evil.example.com") is True
+        assert r_module.mc_servers == servers_before, r_module.mc_servers
+        assert len(api._http.payloads) == 1, api._http.payloads
+        print("[OK] /添加服务器：群主/管理员放行，普通成员与私聊被拒且未改配置")
+
+        # /我的id 与 /权限 都能正常回一条
+        # 注意 botpy 的 @Commands 是按「content 里含指令名」匹配的（不匹配返回 False），
+        # 所以这里要分别用对应的指令内容
+        api._http.payloads.clear()
+        me = fake_message(msg_id="PERM_ID", content="/我的id", api=api,
+                          author_id="01ADMIN", member_role="owner")
+        assert await my_id_command(api=api, message=me) is True
+        text = api._http.payloads[0]["content"]
+        assert "01ADMIN" in text and "owner" in text and "ADMIN_OPENIDS" in text, text
+        perm_msg = fake_message(msg_id="PERM_SHOW", content="/权限", api=api,
+                                author_id="01ADMIN", member_role="owner")
+        assert await show_permissions(api=api, message=perm_msg) is True
+        assert "机器人管理员" in api._http.payloads[1]["content"]
+        assert "群主 / 管理员" in api._http.payloads[1]["content"]
+        print("[OK] /我的id 列出身份标识、/权限 显示权限状态")
+    finally:
+        config.ADMIN_OPENIDS = original
+
+
 async def main():
     apply_reply_seq_patch()
     await test_msg_seq_passive_increments()
@@ -1280,6 +1369,7 @@ async def main():
     test_router_parsing_and_rules()
     test_group_matching_with_real_table()
     await test_full_mode_routing()
+    await test_command_permissions()
     test_lexiang_answer_cleaning()
     print("\n全部自检通过")
 

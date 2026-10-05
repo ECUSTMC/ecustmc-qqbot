@@ -149,3 +149,8 @@ peek_nginx_log = os.getenv("PEEK_NGINX_LOG", "/www/wwwlogs/qqbot.bestzyq.cn.log"
 
 # 全量消息调试开关：开启后把每条被忽略的全量消息也打成 WARNING
 full_message_debug = os.getenv("FULL_MESSAGE_DEBUG", "false").lower() == "true"
+
+# 机器人管理员白名单（逗号分隔的 openid）：/model、/models 等敏感指令只认这些 id。
+# 用 /我的id 查看自己的 openid；群消息的 member_openid 按群隔离，
+# 平台下发 union_openid 时它跨群稳定，优先填 union_openid。
+admin_openids = [x.strip() for x in os.getenv("ADMIN_OPENIDS", "").split(",") if x.strip()]

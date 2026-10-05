@@ -9,6 +9,7 @@ from botpy.types.message import MarkdownPayload, KeyboardPayload
 from config import MODEL_CONFIGS, ECUST_MODEL
 import r
 import config
+from utils.permissions import require_owner
 
 _log = botpy.logging.get_logger()
 
@@ -364,7 +365,10 @@ async def chat_with_deepseek(api: BotAPI, message: GroupMessage, params=None):
 
 @Commands("/model")
 async def switch_model(api: BotAPI, message: GroupMessage, params=None):
-    """切换AI模型"""
+    """切换AI模型（仅机器人管理员，见 .env 的 ADMIN_OPENIDS）"""
+    if not await require_owner(message, "/model"):
+        return True
+
     if not params:
         await message.reply(content=f"当前模型: {config.ECUST_MODEL}\n\n用法: /model <模型名称>\n例: /model gemma-4-e2b-it")
         return True
@@ -395,7 +399,12 @@ async def list_models(api: BotAPI, message: GroupMessage, params=None):
         /models 2            - 第2页
         /models gpt          - 过滤包含 gpt 的模型（第1页）
         /models 2 gpt        - 过滤包含 gpt 的模型（第2页）
+
+    仅机器人管理员可用（见 .env 的 ADMIN_OPENIDS）。
     """
+    if not await require_owner(message, "/models"):
+        return True
+
     PAGE_SIZE = 15
 
     # 解析参数：第一个纯数字视为页码，其余视为关键词

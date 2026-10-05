@@ -74,3 +74,6 @@ PEEK_NGINX_LOG = r.peek_nginx_log
 
 # 全量消息调试开关
 FULL_MESSAGE_DEBUG = r.full_message_debug
+
+# 机器人管理员白名单（openid 列表）：/model、/models 只有这些人能用
+ADMIN_OPENIDS = r.admin_openids

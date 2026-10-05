@@ -8,6 +8,7 @@ from botpy.message import GroupMessage
 from botpy.types.message import MarkdownPayload
 from config import MC_SERVERS, MC_MCSRVSTAT_SERVERS
 import r
+from utils.permissions import require_group_admin
 
 _log = botpy.logging.get_logger()
 
@@ -126,6 +127,10 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
 
 @Commands("/添加服务器")
 async def add_server(api: BotAPI, message: GroupMessage, params=None):
+    """添加 MC 服务器（仅本群群主 / 管理员，会改写 .env）"""
+    if not await require_group_admin(message, "/添加服务器"):
+        return True
+
     if params:
         new_server = ''.join(params).strip()
 
@@ -155,6 +160,10 @@ async def add_server(api: BotAPI, message: GroupMessage, params=None):
 
 @Commands("/移除服务器")
 async def remove_server(api: BotAPI, message: GroupMessage, params=None):
+    """移除 MC 服务器（仅本群群主 / 管理员，会改写 .env）"""
+    if not await require_group_admin(message, "/移除服务器"):
+        return True
+
     if params:
         server_to_remove = ''.join(params).strip()
 

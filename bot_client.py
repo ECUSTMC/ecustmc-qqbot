@@ -34,6 +34,7 @@ from utils import intent
 from utils.group_trigger import is_triggerable, deduper, describe_message
 
 from handlers.authorize import authorize_group
+from handlers.admin import my_id, show_permissions
 
 from config import APPID, SECRET, AI_GROUP_ENABLED, AI_DIRECT_ENABLED, FULL_MESSAGE_DEBUG
 from config import CAMPUS_QA_ENABLED, CAMPUS_QA_REQUESTED
@@ -81,6 +82,8 @@ handlers = [
     query_vote,
     peek_detect,
     kb_qa_command,
+    my_id,
+    show_permissions,
     authorize_group
 ]
 
