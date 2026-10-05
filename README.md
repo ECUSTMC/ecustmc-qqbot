@@ -125,6 +125,8 @@ python main_new.py
 - **minecraft.py**：`/mc` MC 服务器 RCON 命令（支持交互式按钮）
 - **network_tools.py**：`/ip` `/nslookup` `/ping`
 - **server.py**：`/服务器状态` `/status` `/添加服务器` `/移除服务器`
+  （地址里的 `.` 会按 QQ 风控显示成 `-`、原有的 `-` 显示成 `--`，可直接复制给增删指令，见
+  [ADVANCED.md](ADVANCED.md#服务器地址的-qq-脱敏可逆转义)）
 - **vote.py**：`/vote` 整合包投票列表（支持分页、按钮投票）、`/vote add` 添加整合包
 - **weather.py**：`/校园天气`
 

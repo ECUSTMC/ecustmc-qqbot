@@ -23,6 +23,7 @@
   - [机器人管理员：ADMIN_OPENIDS 白名单](#机器人管理员admin_openids-白名单)
   - [群主 / 管理员：按平台 member_role](#群主--管理员按平台-member_role)
   - [加一条受保护的指令](#加一条受保护的指令)
+- [服务器地址的 QQ 脱敏（可逆转义）](#服务器地址的-qq-脱敏可逆转义)
 
 ---
 
@@ -511,4 +512,51 @@ async def dangerous(api, message, params=None):
 
 三个守卫都会：允许时返回 `True`（继续执行）、拒绝时回一句给用户并返回 `False`。
 附带的 `/权限` 指令会告诉提问者当前各类指令的要求以及他自己的身份状态。
+
+---
+
+## 服务器地址的 QQ 脱敏（可逆转义）
+
+QQ 会把消息里的域名当链接做风控，所以 `/服务器状态` 展示地址时不能直接写
+`mc.ecustvr.top`。原来的做法是 `replace(".", "-")`，**不可逆**：
+地址本身带短横线时（`my-server.example.com`）分不清哪个 `-` 原本是 `.`，
+管理员也没法把显示串复制回 `/移除服务器`。
+
+现在用可逆转义（`utils/qq_text.py`）：
+
+```
+qq_display(addr):  addr.replace("-", "--").replace(".", "-")
+qq_address(text):  "--" → "-"，单个 "-" → "."
+```
+
+| 真实地址 | `/服务器状态` 显示 |
+|----------|-------------------|
+| `mc.ecustvr.top` | `mc-ecustvr-top` |
+| `my-server.example.com` | `my--server-example-com` |
+| `a-b-c.d-e.org` | `a--b--c-d--e-org` |
+
+规则一句话：**显示串里单个 `-` 一定是 `.`，`--` 一定是原本的 `-`**，
+所以 `qq_address()` 能无损还原（自检里有往返断言）。
+
+`/移除服务器`（以及 `/添加服务器`）的入参解析顺序（`handlers/server.py::_resolve_address`）：
+
+1. **原文精确命中当前列表** → 直接用它（真实地址带 `-` 的情况优先）；
+2. **输入里有点号** → 认为用户给的就是真实地址，原样使用（不还原）；
+3. **否则**按 `qq_address()` 还原 —— 于是可以直接把 `/服务器状态` 里的
+   `mc-ecustvr-top` 复制过来，机器人自己换回 `mc.ecustvr.top`。
+
+找不到时回复会带上当前列表（同样按显示串列出），方便复制：
+
+```
+服务器不存在：nope-nope-nope
+
+当前列表：
+- mc-ecustvr-top
+- my--server-example-com
+```
+
+> 天然歧义：不带点号又带 `-` 的输入（`my-server`）会被还原成 `my.server`。
+> 真要用这种「单段主机名 + 短横线」的地址，请写带点号的完整地址
+> （`my-server.example.com`，会走第 2 条规则原样使用）。
+
 

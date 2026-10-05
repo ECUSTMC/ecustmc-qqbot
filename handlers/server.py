@@ -9,8 +9,31 @@ from botpy.types.message import MarkdownPayload
 from config import MC_SERVERS, MC_MCSRVSTAT_SERVERS
 import r
 from utils.permissions import require_owner_or_group_admin
+from utils.qq_text import qq_address, qq_display
 
 _log = botpy.logging.get_logger()
+
+
+def _current_servers() -> list:
+    """当前配置的服务器地址列表（去空白、去空项）"""
+    return [s.strip() for s in (r.mc_servers or "").split(",") if s.strip()]
+
+
+def _resolve_address(text: str, current_servers: list) -> str:
+    """把用户输入解析成真实地址
+
+    * 原文命中列表 → 原样返回（真实地址带 ``-`` 的情况优先）；
+    * **输入里有点号** → 认为用户给的就是真实地址，原样返回（不动它）；
+    * 否则按 :func:`qq_address` 还原显示串（``mc-ecustvr-top`` →
+      ``mc.ecustvr.top``、``my--server-example-com`` → ``my-server.example.com``）。
+
+    最后一条有个天然歧义：不带点号又带 ``-`` 的输入（``my-server``）会被还原成
+    ``my.server``。真要在这种环境下加一个「单段主机名 + 短横线」的地址，
+    请直接写带点号的完整地址。
+    """
+    if text in current_servers or "." in text:
+        return text
+    return qq_address(text) or text
 
 
 @Commands("/服务器状态")
@@ -30,7 +53,7 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
                 headers = {'User-Agent': 'ecustmc-qqbot/1.0 (https://cnb.cool/ecustmc/ecustmc-qqbot)'}
                 async with session.get(f"https://api.mcsrvstat.us/2/{server}", headers=headers) as res:
                     server_info = await res.json()
-                    server=server.replace('.', '-')
+                    server = qq_display(server)
                     if server_info.get('online'):
                         players_online = server_info['players']['online']
                         players_max = server_info['players']['max']
@@ -68,7 +91,7 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
                     result = await res.json()
                     if res.ok:
                         server_info = result
-                        server=server.replace('.', '-')
+                        server = qq_display(server)
                         description_raw = server_info.get('description_raw', {})
                         if isinstance(description_raw, str):
                             description_raw = {"text": description_raw}
@@ -110,7 +133,10 @@ async def query_ecustmc_server(api: BotAPI, message: GroupMessage, params=None):
     if not reply_content:
         reply_content = "未查询到任何服务器信息"
     
-    reply_content += '\n\n⚠️由于QQAPI限制，服务器地址中间的"-"请自行换成"."！'
+    reply_content += (
+        '\n\n⚠️ 受 QQ 限制，地址里的 "." 显示成 "-"、原有的 "-" 显示成 "--"。\n'
+        '可以直接复制上面的地址交给 `/添加服务器` / `/移除服务器`，机器人会自动还原。'
+    )
     
     # 添加标题
     if reply_content.startswith("###"):
@@ -134,8 +160,9 @@ async def add_server(api: BotAPI, message: GroupMessage, params=None):
     if params:
         new_server = ''.join(params).strip()
 
-        # 获取当前服务器列表
-        current_servers = r.mc_servers.split(",")
+        # 支持直接粘贴 /服务器状态 里的显示串（"." 显示成 "-"、原有的 "-" 显示成 "--"）
+        current_servers = _current_servers()
+        new_server = _resolve_address(new_server, current_servers) or new_server
 
         # 检查服务器是否已经存在
         if new_server in current_servers:
@@ -149,9 +176,8 @@ async def add_server(api: BotAPI, message: GroupMessage, params=None):
 
         # 更新 r.py 中的 mc_servers
         r.mc_servers = updated_servers
-        new_server = new_server.replace('.', '-')
 
-        await message.reply(content=f"服务器 {new_server} 已添加")
+        await message.reply(content=f"服务器 {qq_display(new_server)} 已添加")
     else:
         await message.reply(content="⚠️ 请提供要添加的服务器地址！")
     
@@ -160,7 +186,14 @@ async def add_server(api: BotAPI, message: GroupMessage, params=None):
 
 @Commands("/移除服务器")
 async def remove_server(api: BotAPI, message: GroupMessage, params=None):
-    """移除 MC 服务器（仅机器人管理员或本群群主 / 管理员，会改写 .env）"""
+    """移除 MC 服务器（仅机器人管理员或本群群主 / 管理员，会改写 .env）
+
+    支持两种输入：
+
+    * 真实地址（``mc.ecustvr.top``）—— 精确匹配；
+    * 直接复制 ``/服务器状态`` 里的显示串（``mc-ecustvr-top``，
+      含 ``--`` 的也能还原）—— 先用原文试一次，再用 :func:`qq_address` 还原后匹配。
+    """
     if not await require_owner_or_group_admin(message, "/移除服务器"):
         return True
 
@@ -168,23 +201,29 @@ async def remove_server(api: BotAPI, message: GroupMessage, params=None):
         server_to_remove = ''.join(params).strip()
 
         # 获取当前服务器列表
-        current_servers = r.mc_servers.split(",")
+        current_servers = _current_servers()
+
+        # 先按原样匹配（真实地址带 "-" 的情况），否则按显示串还原后匹配
+        candidate = _resolve_address(server_to_remove, current_servers)
+        target = candidate if candidate in current_servers else None
 
         # 检查服务器是否存在
-        if server_to_remove not in current_servers:
-            await message.reply(content=f"服务器不存在")
+        if target is None:
+            await message.reply(
+                content=f"服务器不存在：{qq_display(server_to_remove)}\n\n"
+                        f"当前列表：\n" + "\n".join(f"- {qq_display(s)}" for s in current_servers)
+            )
             return True
 
         # 删除服务器并更新 .env 文件
-        current_servers.remove(server_to_remove)
+        current_servers.remove(target)
         updated_servers = ','.join(current_servers)
         r.update_env_variable("MC_SERVERS", updated_servers)
 
         # 更新 r.py 中的 mc_servers
         r.mc_servers = updated_servers
-        server_to_remove = server_to_remove.replace('.','-')
 
-        await message.reply(content=f"服务器 {server_to_remove} 已删除")
+        await message.reply(content=f"服务器 {qq_display(target)} 已删除")
     else:
         await message.reply(content="⚠️ 请提供要删除的服务器地址！")
     

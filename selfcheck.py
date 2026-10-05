@@ -1364,6 +1364,68 @@ async def test_command_permissions():
         config.ADMIN_OPENIDS = original
 
 
+async def test_server_address_escaping():
+    """服务器地址的 QQ 脱敏可逆：`.`→`-`、原有的 `-`→`--`，且增删都能解析显示串"""
+    from handlers import server as server_handler
+    from utils.qq_text import qq_address, qq_display
+
+    # 1) 转义 / 还原无损，包括地址本来就带短横线的情况
+    for addr in ("mc.ecustvr.top", "my-server.example.com", "a-b-c.d-e.org", "plain.host"):
+        assert qq_address(qq_display(addr)) == addr, addr
+    assert qq_display("mc.ecustvr.top") == "mc-ecustvr-top"
+    assert qq_display("my-server.example.com") == "my--server-example-com"
+
+    api = make_api()
+    original_servers = r_module.mc_servers
+    original_update = r_module.update_env_variable
+    written = []
+    r_module.mc_servers = "mc.ecustvr.top,my-server.example.com"
+    r_module.update_env_variable = lambda name, value: written.append((name, value))
+    try:
+        # 2) 直接复制 /服务器状态 的显示串就能移除
+        admin = fake_message(msg_id="SRV1", content="/移除服务器 mc-ecustvr-top",
+                             api=api, member_role="admin")
+        api._http.payloads.clear()
+        assert await server_handler.remove_server(api=api, message=admin, params="mc-ecustvr-top") is True
+        assert r_module.mc_servers == "my-server.example.com", r_module.mc_servers
+        assert written[-1] == ("MC_SERVERS", "my-server.example.com"), written
+        assert "mc-ecustvr-top" in api._http.payloads[0]["content"]
+
+        # 3) 带 `--` 的显示串还原成「本来带 - 的地址」
+        dashy = fake_message(msg_id="SRV2", content="/移除服务器 my--server-example-com",
+                             api=api, member_role="admin")
+        assert await server_handler.remove_server(api=api, message=dashy, params="my--server-example-com") is True
+        assert r_module.mc_servers == "", r_module.mc_servers
+
+        # 4) 真实地址（既有点号又带短横线）原样匹配，不会被误还原
+        r_module.mc_servers = "my-server.example.com"
+        real = fake_message(msg_id="SRV3", content="/移除服务器 my-server.example.com",
+                            api=api, member_role="admin")
+        assert await server_handler.remove_server(api=api, message=real, params="my-server.example.com") is True
+        assert r_module.mc_servers == "", r_module.mc_servers
+
+        # 5) 找不到时回一条，并把当前列表按显示串列出来（方便复制）
+        r_module.mc_servers = "mc.ecustvr.top"
+        miss = fake_message(msg_id="SRV4", content="/移除服务器 nope-nope-nope",
+                            api=api, member_role="admin")
+        api._http.payloads.clear()
+        assert await server_handler.remove_server(api=api, message=miss, params="nope-nope-nope") is True
+        body = api._http.payloads[0]["content"]
+        assert "服务器不存在" in body and "mc-ecustvr-top" in body, body
+        assert r_module.mc_servers == "mc.ecustvr.top"
+
+        # 6) /添加服务器 同样接受显示串，但落库的是真实地址
+        add = fake_message(msg_id="SRV5", content="/添加服务器 gtnh-ecustvr-top",
+                           api=api, member_role="admin")
+        assert await server_handler.add_server(api=api, message=add, params="gtnh-ecustvr-top") is True
+        assert r_module.mc_servers == "mc.ecustvr.top,gtnh.ecustvr.top", r_module.mc_servers
+        assert "gtnh-ecustvr-top" in api._http.payloads[-1]["content"]
+        print("[OK] 服务器地址脱敏可逆：显示串可直接粘贴给 /移除服务器、/添加服务器")
+    finally:
+        r_module.mc_servers = original_servers
+        r_module.update_env_variable = original_update
+
+
 async def main():
     apply_reply_seq_patch()
     await test_msg_seq_passive_increments()
@@ -1383,6 +1445,7 @@ async def main():
     test_group_matching_with_real_table()
     await test_full_mode_routing()
     await test_command_permissions()
+    await test_server_address_escaping()
     test_lexiang_answer_cleaning()
     print("\n全部自检通过")
 
