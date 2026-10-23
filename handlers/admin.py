@@ -1,6 +1,7 @@
 """身份 / 管理员相关指令"""
 import re
 
+import botpy
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
@@ -18,6 +19,8 @@ from utils.permissions import (
 )
 from utils.reply import safe_reply
 
+_log = botpy.logging.get_logger()
+
 # 直接给 id 时的分隔符（空格 / 中英文逗号 / 顿号 / 分号）
 _ID_SPLIT_RE = re.compile(r"[\s,，、;；]+")
 # 正文里的 @ 占位符（botpy 不会把 @ 从 content 里删掉）
@@ -26,10 +29,16 @@ _PLACEHOLDER_RE = re.compile(r"<@!?([^>\s]+)>")
 _ID_TOKEN_RE = re.compile(r"^[0-9A-Za-z_-]{8,}$")
 
 _NO_TARGET_HINT = (
-    "⚠️ 请用 `@` 选中对象，例如：\n"
-    "- 群聊：`@机器人 /添加管理员 @某某`\n"
-    "- 直接给 openid：`/添加管理员 01A2B3C4...`（让对方发 `/我的id` 查）"
+    "⚠️ 没在这条消息里找到「被 @ 的人」。\n\n"
+    "平台只对**真正的 @** 下发成员信息（`mentions` / 正文里的 `<@member_openid>`）；"
+    "手动打出来的 `@某某` 只是一段文字，机器人看不到对方是谁。\n\n"
+    "可行的写法：\n"
+    "- 发 `@` 后在**弹出的成员列表里选中**对方，再发 `/添加管理员 @对方`；\n"
+    "- 让对方在本群发一次 `/我的id`，你再用 `/添加管理员 <openid>`（最稳）。"
 )
+
+# 这两条指令共用一句「没找到对象」的说明，只是指令名不同
+_NO_REMOVE_TARGET_HINT = _NO_TARGET_HINT.replace("/添加管理员", "/移除管理员")
 
 
 def _mask(value: str, keep: int = 6) -> str:
@@ -44,13 +53,59 @@ def _explicit_ids(params) -> list:
     两种写法都收：``<@01A2B3C4>``（客户端把 @ 渲染成占位符）与裸 id
     ``01A2B3C4``（空格 / 逗号分隔多个）。**注意别把占位符原样当成 id**：
     ``params`` 里带着 ``<@...>``，直接 split 会把 ``"<@01X>"`` 写进白名单。
+    ``<@all>``（@全体成员）不是某个人，丢掉。
     """
     text = params if isinstance(params, str) else "".join(params or [])
     text = text or ""
-    ids = [m.strip() for m in _PLACEHOLDER_RE.findall(text) if m.strip()]
+    ids = [
+        m.strip() for m in _PLACEHOLDER_RE.findall(text)
+        if m.strip() and m.strip().lower() != "all"
+    ]
     rest = _PLACEHOLDER_RE.sub(" ", text)
     ids += [t for t in _ID_SPLIT_RE.split(rest.strip()) if _ID_TOKEN_RE.match(t)]
     return list(dict.fromkeys(ids))
+
+
+def _describe_mentions(message) -> str:
+    """给日志用：这条消息里 @ 到的人与各自字段（排查「@了却说没找到」）"""
+    users = getattr(message, "mentions", None) or []
+    parts = []
+    for user in users:
+        fields = {}
+        for attr in ("id", "union_openid", "member_openid", "user_openid", "bot"):
+            value = getattr(user, attr, None)
+            if value:
+                fields[attr] = str(value)
+        parts.append(str(fields))
+    return f"mentions={len(users)} {' '.join(parts)}"[:400]
+
+
+def _debug_suffix(message) -> str:
+    """无目标时附一句「平台到底给了什么」，省得去翻日志"""
+    users = getattr(message, "mentions", None) or []
+    content = getattr(message, "content", "") or ""
+    placeholders = [
+        m for m in _PLACEHOLDER_RE.findall(content) if m.strip().lower() != "all"
+    ]
+    return (
+        f"\n\n（平台下发的 @ 成员：{len(users)} 个；"
+        f"正文里的 @ 占位符：{len(placeholders)} 个）"
+    )
+
+
+def _log_no_target(message, command: str) -> None:
+    """没找到 @ 对象时把「平台到底给了什么」打到日志里
+
+    常见原因是 @ 是**手打文本**而不是从成员列表里选中的真 @——
+    此时平台既不下发 ``mentions``，正文里也没有 ``<@member_openid>``，
+    机器人无从得知对方是谁。有这行日志就能一眼确认。
+    """
+    _log.warning(
+        f"[管理员] {command} 没找到目标："
+        f"content={getattr(message, 'content', None)!r} "
+        f"{_describe_mentions(message)} "
+        f"message_type={getattr(message, 'message_type', None)}"
+    )
 
 
 def _target_ids(message, params) -> list:
@@ -89,7 +144,8 @@ async def add_admin(api: BotAPI, message: GroupMessage, params=None):
 
     ids = _target_ids(message, params)
     if not ids:
-        await safe_reply(message, content=_NO_TARGET_HINT)
+        _log_no_target(message, "/添加管理员")
+        await safe_reply(message, content=_NO_TARGET_HINT + _debug_suffix(message))
         return True
 
     result = add_owner_ids(ids)
@@ -121,7 +177,10 @@ async def remove_admin(api: BotAPI, message: GroupMessage, params=None):
 
     ids = _target_ids(message, params)
     if not ids:
-        await safe_reply(message, content=_NO_TARGET_HINT.replace("添加", "移除"))
+        _log_no_target(message, "/移除管理员")
+        await safe_reply(
+            message, content=_NO_REMOVE_TARGET_HINT + _debug_suffix(message)
+        )
         return True
 
     # 防止把自己（或最后一个人）删掉后无人能再用管理员指令

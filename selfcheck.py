@@ -1421,7 +1421,44 @@ async def test_admin_management():
         # 没 @ 也没给 id → 提示用法，不报错
         empty = fake_message(msg_id="ADM4", content="/添加管理员", api=api, author_id="01admin")
         assert await admin_handler.add_admin(api=api, message=empty, params="") is True
-        assert "请用" in api._http.payloads[-1]["content"]
+        assert "没在这条消息里找到" in api._http.payloads[-1]["content"]
+
+        # 手打的「@昵称」不是真 @：平台既没 mentions 也没占位符 → 拒绝并解释
+        written.clear()
+        api._http.payloads.clear()
+        plain = fake_message(
+            msg_id="ADM4B", content="/添加管理员 @26-计算机-新生家长", api=api,
+            author_id="01admin", mentions=[],
+        )
+        assert await admin_handler.add_admin(
+            api=api, message=plain, params="@26-计算机-新生家长"
+        ) is True
+        assert written == [], written
+        assert config.ADMIN_OPENIDS == ["01admin", "01NEW"], config.ADMIN_OPENIDS
+        body = api._http.payloads[-1]["content"]
+        assert "没在这条消息里找到" in body and "0 个" in body, body
+
+        # 正文里有 <@openid> 占位符（平台没给 mentions）→ 仍能加
+        written.clear()
+        placeholder = fake_message(
+            msg_id="ADM4C", content="/添加管理员 <@01PLAIN>", api=api,
+            author_id="01admin", mentions=[],
+        )
+        assert await admin_handler.add_admin(
+            api=api, message=placeholder, params=" <@01PLAIN>"
+        ) is True
+        assert config.ADMIN_OPENIDS == ["01admin", "01NEW", "01PLAIN"], config.ADMIN_OPENIDS
+
+        # <@all>（@全体成员）不是某个人 → 当没找到
+        allmsg = fake_message(
+            msg_id="ADM4D", content="/添加管理员 <@all>", api=api,
+            author_id="01admin", mentions=[],
+        )
+        assert await admin_handler.add_admin(api=api, message=allmsg, params=" <@all>") is True
+        assert config.ADMIN_OPENIDS == ["01admin", "01NEW", "01PLAIN"], config.ADMIN_OPENIDS
+
+        # 清理：把 ADM4C 加进来的 id 删掉，后面的用例维持在 ["01admin", "01NEW"]
+        config.ADMIN_OPENIDS = ["01admin", "01NEW"]
 
         # /管理员列表 只有管理员能看
         api._http.payloads.clear()

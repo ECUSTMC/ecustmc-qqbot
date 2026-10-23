@@ -251,7 +251,9 @@ def mentioned_identities(message) -> list:
     content = getattr(message, "content", "") or ""
     for raw in _MENTION_PLACEHOLDER_RE.findall(content):
         value = raw.strip()
-        if not value or _owner_key(value) in author_keys or _owner_key(value) in seen:
+        if not value or value.lower() == "all":  # <@all> = @全体成员，不是某个人
+            continue
+        if _owner_key(value) in author_keys or _owner_key(value) in seen:
             continue
         seen.add(_owner_key(value))
         people.append({"id": value, "ids": [value], "name": ""})
