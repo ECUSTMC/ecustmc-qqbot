@@ -153,4 +153,6 @@ full_message_debug = os.getenv("FULL_MESSAGE_DEBUG", "false").lower() == "true"
 # 机器人管理员白名单（逗号分隔的 openid）：/model、/models 等敏感指令只认这些 id。
 # 用 /我的id 查看自己的 openid；群消息的 member_openid 按群隔离，
 # 平台下发 union_openid 时它跨群稳定，优先填 union_openid。
+# 运行时用 /添加管理员、/移除管理员 增删时，会通过 update_env_variable() 写回本文件
+# 对应的 ADMIN_OPENIDS 并同步 config.ADMIN_OPENIDS（见 utils/permissions.py）。
 admin_openids = [x.strip() for x in os.getenv("ADMIN_OPENIDS", "").split(",") if x.strip()]

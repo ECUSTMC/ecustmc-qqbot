@@ -34,7 +34,13 @@ from utils import intent
 from utils.group_trigger import is_triggerable, deduper, describe_message
 
 from handlers.authorize import authorize_group
-from handlers.admin import my_id, show_permissions
+from handlers.admin import (
+    my_id,
+    show_permissions,
+    add_admin,
+    remove_admin,
+    list_admins,
+)
 
 from config import APPID, SECRET, AI_GROUP_ENABLED, AI_DIRECT_ENABLED, FULL_MESSAGE_DEBUG
 from config import CAMPUS_QA_ENABLED, CAMPUS_QA_REQUESTED
@@ -84,6 +90,12 @@ handlers = [
     kb_qa_command,
     my_id,
     show_permissions,
+    # 管理员白名单的运行时维护（会写回 .env，立即生效）
+    # 注意 botpy 的 Commands 是**子串匹配**且按本列表顺序命中：
+    # 别新增更短的 `/管理员` 之类的指令 —— 它会把 /管理员列表、/添加管理员 都吃掉。
+    add_admin,
+    remove_admin,
+    list_admins,
     authorize_group
 ]
 

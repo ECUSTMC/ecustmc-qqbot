@@ -1364,6 +1364,92 @@ async def test_command_permissions():
         config.ADMIN_OPENIDS = original
 
 
+async def test_admin_management():
+    """/添加管理员、/移除管理员、/管理员列表：只认管理员、写回 .env、不锁死自己"""
+    import config
+    from utils import permissions
+    from handlers import admin as admin_handler
+
+    api = make_api()
+    original_owners = config.ADMIN_OPENIDS
+    original_update = r_module.update_env_variable
+    written = []
+    r_module.update_env_variable = lambda name, value: written.append((name, value))
+    try:
+        # 白名单为空：谁也用不了（连「看起来是管理员」的人也不行）
+        config.ADMIN_OPENIDS = []
+        nobody = fake_message(msg_id="ADM0", content="/添加管理员 <@01X>", api=api,
+                              author_id="01X", member_role="owner")
+        api._http.payloads.clear()
+        assert await admin_handler.add_admin(api=api, message=nobody, params=" <@01X>") is True
+        assert config.ADMIN_OPENIDS == [], config.ADMIN_OPENIDS
+        assert "只有机器人管理员" in api._http.payloads[0]["content"]
+
+        config.ADMIN_OPENIDS = ["01admin"]
+        # 非管理员：被拒，白名单不变，也不写 .env
+        outsider = fake_message(msg_id="ADM1", content="/添加管理员 <@01EVIL>", api=api,
+                                author_id="01OUT", mentions=["01EVIL"])
+        written.clear()
+        api._http.payloads.clear()
+        assert await admin_handler.add_admin(api=api, message=outsider, params=" <@01EVIL>") is True
+        assert config.ADMIN_OPENIDS == ["01admin"], config.ADMIN_OPENIDS
+        assert written == [], written
+        assert "只有机器人管理员" in api._http.payloads[0]["content"]
+
+        # 管理员 @ 某人（同时 @ 了自己 = mentions 里的 bot=true）→ 只加被 @ 的人
+        owner = fake_message(
+            msg_id="ADM2", content="/添加管理员 <@01NEW>", api=api, author_id="01admin",
+            mentions=[("BOT_OPENID", True), ("01NEW", False)],
+        )
+        written.clear()
+        api._http.payloads.clear()
+        assert await admin_handler.add_admin(api=api, message=owner, params=" <@01NEW>") is True
+        assert config.ADMIN_OPENIDS == ["01admin", "01NEW"], config.ADMIN_OPENIDS
+        assert written[-1] == ("ADMIN_OPENIDS", "01admin,01NEW"), written
+        assert permissions.is_owner(
+            fake_message(msg_id="ADM2B", content="/x", api=api, author_id="01new"))
+        assert "已添加" in api._http.payloads[0]["content"]
+
+        # 重复添加 → 提示已存在，不再写 .env
+        written.clear()
+        again = fake_message(msg_id="ADM3", content="/添加管理员 <@01NEW>", api=api,
+                             author_id="01admin", mentions=["01NEW"])
+        assert await admin_handler.add_admin(api=api, message=again, params=" <@01NEW>") is True
+        assert written == [], written
+        assert "已经在管理员列表里" in api._http.payloads[-1]["content"]
+
+        # 没 @ 也没给 id → 提示用法，不报错
+        empty = fake_message(msg_id="ADM4", content="/添加管理员", api=api, author_id="01admin")
+        assert await admin_handler.add_admin(api=api, message=empty, params="") is True
+        assert "请用" in api._http.payloads[-1]["content"]
+
+        # /管理员列表 只有管理员能看
+        api._http.payloads.clear()
+        listing = fake_message(msg_id="ADM5", content="/管理员列表", api=api, author_id="01admin")
+        assert await admin_handler.list_admins(api=api, message=listing) is True
+        body = api._http.payloads[0]["content"]
+        assert "01admin" in body and "01NEW" in body, body
+
+        # 移除：删掉别人可以；删到只剩自己也可以；删空则拒绝（防止锁死）
+        written.clear()
+        rm = fake_message(msg_id="ADM6", content="/移除管理员 <@01NEW>", api=api,
+                          author_id="01admin", mentions=["01NEW"])
+        assert await admin_handler.remove_admin(api=api, message=rm, params=" <@01NEW>") is True
+        assert config.ADMIN_OPENIDS == ["01admin"], config.ADMIN_OPENIDS
+        assert written[-1] == ("ADMIN_OPENIDS", "01admin"), written
+
+        api._http.payloads.clear()
+        suicide = fake_message(msg_id="ADM7", content="/移除管理员 <@01admin>", api=api,
+                               author_id="01admin", mentions=["01admin"])
+        assert await admin_handler.remove_admin(api=api, message=suicide, params=" <@01admin>") is True
+        assert config.ADMIN_OPENIDS == ["01admin"], config.ADMIN_OPENIDS
+        assert "谁也用不了管理员指令" in api._http.payloads[0]["content"]
+        print("[OK] /添加管理员|/移除管理员|/管理员列表：只认管理员、写回 .env、拒绝清空白名单")
+    finally:
+        config.ADMIN_OPENIDS = original_owners
+        r_module.update_env_variable = original_update
+
+
 async def test_server_address_escaping():
     """服务器地址的 QQ 脱敏可逆：`.`→`-`、原有的 `-`→`--`，且增删都能解析显示串"""
     from handlers import server as server_handler
@@ -1445,6 +1531,7 @@ async def main():
     test_group_matching_with_real_table()
     await test_full_mode_routing()
     await test_command_permissions()
+    await test_admin_management()
     await test_server_address_escaping()
     test_lexiang_answer_cleaning()
     print("\n全部自检通过")
