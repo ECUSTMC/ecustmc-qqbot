@@ -1,7 +1,6 @@
 """身份 / 管理员相关指令"""
 import re
 
-import botpy
 from botpy import BotAPI
 from botpy.ext.command_util import Commands
 from botpy.message import GroupMessage
@@ -19,8 +18,6 @@ from utils.permissions import (
 )
 from utils.reply import safe_reply
 
-_log = botpy.logging.get_logger()
-
 # 直接给 id 时的分隔符（空格 / 中英文逗号 / 顿号 / 分号）
 _ID_SPLIT_RE = re.compile(r"[\s,，、;；]+")
 # 正文里的 @ 占位符（botpy 不会把 @ 从 content 里删掉）
@@ -30,11 +27,12 @@ _ID_TOKEN_RE = re.compile(r"^[0-9A-Za-z_-]{8,}$")
 
 _NO_TARGET_HINT = (
     "⚠️ 没在这条消息里找到「被 @ 的人」。\n\n"
-    "平台只对**真正的 @** 下发成员信息（`mentions` / 正文里的 `<@member_openid>`）；"
-    "手动打出来的 `@某某` 只是一段文字，机器人看不到对方是谁。\n\n"
-    "可行的写法：\n"
-    "- 发 `@` 后在**弹出的成员列表里选中**对方，再发 `/添加管理员 @对方`；\n"
-    "- 让对方在本群发一次 `/我的id`，你再用 `/添加管理员 <openid>`（最稳）。"
+    "**这是平台限制，不是写法问题**：群里 @ 真人成员时，QQ 不会把对方身份下发给机器人——"
+    "正文里的 `<@member_openid>` 被抹掉（只剩空格），`mentions` 也是空的。"
+    "机器人只能看见「@机器人自己」，看不见被 @ 的普通成员。\n\n"
+    "改用 openid 添加（唯一可靠的方式）：\n"
+    "1. 让对方在本群 @机器人 发一次 `/我的id`；\n"
+    "2. 你复制回复里的那串 id，发 `/添加管理员 <openid>`。"
 )
 
 # 这两条指令共用一句「没找到对象」的说明，只是指令名不同
@@ -66,20 +64,6 @@ def _explicit_ids(params) -> list:
     return list(dict.fromkeys(ids))
 
 
-def _describe_mentions(message) -> str:
-    """给日志用：这条消息里 @ 到的人与各自字段（排查「@了却说没找到」）"""
-    users = getattr(message, "mentions", None) or []
-    parts = []
-    for user in users:
-        fields = {}
-        for attr in ("id", "union_openid", "member_openid", "user_openid", "bot"):
-            value = getattr(user, attr, None)
-            if value:
-                fields[attr] = str(value)
-        parts.append(str(fields))
-    return f"mentions={len(users)} {' '.join(parts)}"[:400]
-
-
 def _debug_suffix(message) -> str:
     """无目标时附一句「平台到底给了什么」，省得去翻日志"""
     users = getattr(message, "mentions", None) or []
@@ -90,21 +74,6 @@ def _debug_suffix(message) -> str:
     return (
         f"\n\n（平台下发的 @ 成员：{len(users)} 个；"
         f"正文里的 @ 占位符：{len(placeholders)} 个）"
-    )
-
-
-def _log_no_target(message, command: str) -> None:
-    """没找到 @ 对象时把「平台到底给了什么」打到日志里
-
-    常见原因是 @ 是**手打文本**而不是从成员列表里选中的真 @——
-    此时平台既不下发 ``mentions``，正文里也没有 ``<@member_openid>``，
-    机器人无从得知对方是谁。有这行日志就能一眼确认。
-    """
-    _log.warning(
-        f"[管理员] {command} 没找到目标："
-        f"content={getattr(message, 'content', None)!r} "
-        f"{_describe_mentions(message)} "
-        f"message_type={getattr(message, 'message_type', None)}"
     )
 
 
@@ -144,7 +113,6 @@ async def add_admin(api: BotAPI, message: GroupMessage, params=None):
 
     ids = _target_ids(message, params)
     if not ids:
-        _log_no_target(message, "/添加管理员")
         await safe_reply(message, content=_NO_TARGET_HINT + _debug_suffix(message))
         return True
 
@@ -177,7 +145,6 @@ async def remove_admin(api: BotAPI, message: GroupMessage, params=None):
 
     ids = _target_ids(message, params)
     if not ids:
-        _log_no_target(message, "/移除管理员")
         await safe_reply(
             message, content=_NO_REMOVE_TARGET_HINT + _debug_suffix(message)
         )
@@ -230,8 +197,9 @@ async def list_admins(api: BotAPI, message: GroupMessage, params=None):
     lines += [f"{index}. `{_mask(value)}`" for index, value in enumerate(owners, 1)]
     lines += [
         "",
-        "增删用 `/添加管理员 @某人` / `/移除管理员 @某人`（会写回 `.env`）。",
+        "增删用 `/添加管理员 <openid>` / `/移除管理员 <openid>`（会写回 `.env`）。",
         "完整的 id 在 `.env` 的 `ADMIN_OPENIDS` 里；自己那份用 `/我的id` 查。",
+        "（群里 @ 普通成员时平台不下发对方 openid，所以加人请贴 id。）",
     ]
     await safe_reply(message, content="\n".join(lines))
     return True
